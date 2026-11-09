@@ -1,6 +1,6 @@
 package dev.notedeck.model
 
-data class Card(val id: String, val front: String, val back: String)
+data class Card(val id: String, val front: String, val back: String, val box: Int = 1)
 
 data class Deck(val name: String, val cards: List<Card>)
 
