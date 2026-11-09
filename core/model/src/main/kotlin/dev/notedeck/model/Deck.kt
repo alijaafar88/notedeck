@@ -1,3 +1,5 @@
 package dev.notedeck.model
 
-// TODO(k1): add a Card with a front and a back, and a Deck with a name and a list of cards.
+data class Card(val front: String, val back: String)
+
+data class Deck(val name: String, val cards: List<Card>)
