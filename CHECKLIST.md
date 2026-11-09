@@ -1,11 +1,11 @@
-# K3: A Leitner scheduler
+# K4: A Flow-backed DeckRepository
 
-Write the scheduling rules as pure functions.
+Expose decks as a stream that the console app and tests can both collect.
 
-- [ ] `Card` has a `box` that starts at 1
-- [ ] `nextReview(card, grade)` returns a new `Card` and changes nothing else
-- [ ] Boxes stay between 1 and 5
-- [ ] A table-driven test covers every grade, including both ends of the box range
+- [ ] `DeckRepository` exposes `Flow<List<Deck>>`
+- [ ] `FakeDeckRepository` uses `MutableStateFlow` internally and exposes it read-only
+- [ ] The console app collects the flow and prints each update
+- [ ] A Turbine test asserts a new emission after `addDeck()`
 
 When you're done, run `./gradlew test`, then answer the verify question in the KotlinDroid Daily app.
-Stuck? Compare with the `k3-solution` tag, but finish by hand first.
+Stuck? Compare with the `k4-solution` tag, but finish by hand first.
