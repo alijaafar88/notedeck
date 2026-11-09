@@ -1,9 +1,15 @@
 package dev.notedeck.model
 
-data class Card(val front: String, val back: String)
+data class Card(val id: String, val front: String, val back: String)
 
 data class Deck(val name: String, val cards: List<Card>)
 
-// TODO(k2): give Card an id.
-// TODO(k2): add a ReviewGrade enum: AGAIN, HARD, GOOD, EASY.
-// TODO(k2): add a sealed ReviewResult with one case for a correct answer and one for a miss.
+enum class ReviewGrade { AGAIN, HARD, GOOD, EASY }
+
+sealed interface ReviewResult {
+    val card: Card
+
+    data class Correct(override val card: Card, val grade: ReviewGrade) : ReviewResult
+
+    data class Missed(override val card: Card) : ReviewResult
+}

@@ -7,8 +7,8 @@ fun main() {
     val deck = Deck(
         name = "Kotlin basics",
         cards = listOf(
-            Card("val or var for a constant reference?", "val"),
-            Card("What makes a type nullable?", "A trailing ?"),
+            Card("1", "val or var for a constant reference?", "val"),
+            Card("2", "What makes a type nullable?", "A trailing ?"),
         ),
     )
     println("${deck.name} (${deck.cards.size} cards)")
