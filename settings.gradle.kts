@@ -14,4 +14,5 @@ dependencyResolutionManagement {
 rootProject.name = "notedeck"
 
 include(":core:model")
+include(":core:domain")
 include(":cli")
