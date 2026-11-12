@@ -15,21 +15,24 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 
 class DecksViewModelTest {
+    // Injected in place of Dispatchers.IO, so the test controls every thread the ViewModel uses.
+    private val dispatcher = UnconfinedTestDispatcher()
+
     @BeforeTest
-    fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
+    fun setUp() = Dispatchers.setMain(dispatcher)
 
     @AfterTest
     fun tearDown() = Dispatchers.resetMain()
 
     @Test
     fun `is Loading until someone collects`() {
-        assertEquals(DecksUiState.Loading, DecksViewModel(FakeDeckRepository()).uiState.value)
+        assertEquals(DecksUiState.Loading, DecksViewModel(FakeDeckRepository(), dispatcher).uiState.value)
     }
 
     @Test
     fun `an empty repository is Empty, and adding a deck shows Content`() = runTest {
         val repository = FakeDeckRepository()
-        val viewModel = DecksViewModel(repository)
+        val viewModel = DecksViewModel(repository, dispatcher)
         viewModel.uiState.test {
             assertEquals(DecksUiState.Empty, awaitLoaded())
             val deck = Deck("Kotlin", emptyList())

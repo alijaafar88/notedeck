@@ -2,11 +2,11 @@ package dev.notedeck.app.ui
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
-import dev.notedeck.app.ServiceLocator
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
+import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.notedeck.domain.DeckRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -20,9 +20,13 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.coroutines.launch
 
-/** MVI: every change is an intent through [reduce]; one-off effects go through a Channel. */
-class StudyViewModel(
-    private val deckName: String?,
+/**
+ * MVI: every change is an intent through [reduce]; one-off effects go through a Channel.
+ * The deck name comes from the navigation key, so it's an assisted parameter; Hilt supplies the rest.
+ */
+@HiltViewModel(assistedFactory = StudyViewModel.Factory::class)
+class StudyViewModel @AssistedInject constructor(
+    @Assisted private val deckName: String?,
     private val saved: SavedStateHandle,
     repository: DeckRepository,
 ) : ViewModel() {
@@ -52,12 +56,13 @@ class StudyViewModel(
         if (intent == StudyIntent.Done) _effects.trySend(StudyEffect.Close)
     }
 
-    companion object {
-        private const val POSITION = "position"
-        private const val KNOWN = "known"
+    @AssistedFactory
+    interface Factory {
+        fun create(deckName: String?): StudyViewModel
+    }
 
-        fun factory(deckName: String?) = viewModelFactory {
-            initializer { StudyViewModel(deckName, createSavedStateHandle(), ServiceLocator.decks) }
-        }
+    private companion object {
+        const val POSITION = "position"
+        const val KNOWN = "known"
     }
 }

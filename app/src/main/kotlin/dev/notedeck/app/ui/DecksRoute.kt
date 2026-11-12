@@ -12,13 +12,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import dev.notedeck.model.Card
 import dev.notedeck.model.Deck
 
 /** Stateful: gets the ViewModel and collects its state. */
 @Composable
-fun DecksRoute(onOpen: (Deck) -> Unit, modifier: Modifier = Modifier, viewModel: DecksViewModel = viewModel(factory = DecksViewModel.Factory)) {
+fun DecksRoute(onOpen: (Deck) -> Unit, modifier: Modifier = Modifier, viewModel: DecksViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     DecksScreen(state, onOpen, modifier)
 }

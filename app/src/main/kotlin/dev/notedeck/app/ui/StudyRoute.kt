@@ -20,14 +20,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 
 @Composable
 fun StudyRoute(
     deckName: String?,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: StudyViewModel = viewModel(factory = StudyViewModel.factory(deckName)),
+    viewModel: StudyViewModel = hiltViewModel<StudyViewModel, StudyViewModel.Factory> { it.create(deckName) },
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val close by rememberUpdatedState(onClose)
