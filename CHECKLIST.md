@@ -1,11 +1,11 @@
-# K4: A Flow-backed DeckRepository
+# C1: NoteDeck gets a screen
 
-Expose decks as a stream that the console app and tests can both collect.
+Add an Android app module to NoteDeck and show something from `:core:model` on screen.
 
-- [ ] `DeckRepository` exposes `Flow<List<Deck>>`
-- [ ] `FakeDeckRepository` uses `MutableStateFlow` internally and exposes it read-only
-- [ ] The console app collects the flow and prints each update
-- [ ] A Turbine test asserts a new emission after `addDeck()`
+- [ ] An `:app` module exists and depends on `:core:model`
+- [ ] `MainActivity` calls `setContent` with a composable
+- [ ] The screen shows the number of decks in a `Text`
+- [ ] The app runs on an emulator
 
-When you're done, run `./gradlew test`, then answer the verify question in the KotlinDroid Daily app.
-Stuck? Compare with the `k4-solution` tag, but finish by hand first.
+When you're done, run the app on an emulator and run `./gradlew test`, then answer the verify question in the KotlinDroid Daily app.
+Stuck? Compare with the `c1-solution` tag, but finish by hand first. Afterwards, try the AI-pair follow-up from the app.
