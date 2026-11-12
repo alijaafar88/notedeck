@@ -3,16 +3,15 @@ package dev.notedeck.app
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import dev.notedeck.app.ui.DeckListScreen
+import dev.notedeck.app.ui.NoteDeckTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val decks = SampleDecks.all
         setContent {
-            MaterialTheme {
-                Text("${decks.size} decks")
+            NoteDeckTheme {
+                DeckListScreen(SampleDecks.all, onOpen = {})
             }
         }
     }

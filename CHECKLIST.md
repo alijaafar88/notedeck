@@ -1,11 +1,11 @@
-# C1: NoteDeck gets a screen
+# C2: Deck List and Card Detail screens
 
-Add an Android app module to NoteDeck and show something from `:core:model` on screen.
+Build two static screens with fake data, Material 3 theming and previews.
 
-- [ ] An `:app` module exists and depends on `:core:model`
-- [ ] `MainActivity` calls `setContent` with a composable
-- [ ] The screen shows the number of decks in a `Text`
-- [ ] The app runs on an emulator
+- [ ] A Deck List screen shows fake decks in a `LazyColumn` with keys
+- [ ] A Card Detail screen shows one card's front and back
+- [ ] Both screens use `MaterialTheme` tokens, with no hard-coded colours
+- [ ] Each screen has light and dark previews with fake data
 
 When you're done, run the app on an emulator and run `./gradlew test`, then answer the verify question in the KotlinDroid Daily app.
-Stuck? Compare with the `c1-solution` tag, but finish by hand first. Afterwards, try the AI-pair follow-up from the app.
+Stuck? Compare with the `c2-solution` tag, but finish by hand first. Afterwards, try the AI-pair follow-up from the app.
