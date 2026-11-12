@@ -72,7 +72,12 @@ fun NoteDeckApp() {
                         detail()
                     }
                 }
-                entry<StudyKey> { key -> StudyRoute(key.deckName) }
+                entry<StudyKey> { key ->
+                    StudyRoute(key.deckName, onClose = {
+                        if (current.size > 1) current.removeLastOrNull()
+                        selected = 0
+                    })
+                }
                 entry<SettingsKey> { Text("Settings") }
             },
         )
