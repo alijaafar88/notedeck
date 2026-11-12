@@ -1,5 +1,6 @@
 pluginManagement {
     repositories {
+        google()
         gradlePluginPortal()
         mavenCentral()
     }
@@ -7,6 +8,7 @@ pluginManagement {
 
 dependencyResolutionManagement {
     repositories {
+        google()
         mavenCentral()
     }
 }
@@ -16,3 +18,4 @@ rootProject.name = "notedeck"
 include(":core:model")
 include(":core:domain")
 include(":cli")
+include(":app")
