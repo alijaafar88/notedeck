@@ -1,0 +1,47 @@
+package dev.notedeck.app.ui
+
+import android.content.res.Configuration
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import dev.notedeck.model.Card
+import dev.notedeck.model.Deck
+
+/** Stateful: gets the ViewModel and collects its state. */
+@Composable
+fun DecksRoute(onOpen: (Deck) -> Unit, modifier: Modifier = Modifier, viewModel: DecksViewModel = viewModel(factory = DecksViewModel.Factory)) {
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    DecksScreen(state, onOpen, modifier)
+}
+
+/** Stateless: draws whatever state it's given. */
+@Composable
+fun DecksScreen(state: DecksUiState, onOpen: (Deck) -> Unit, modifier: Modifier = Modifier) {
+    when (state) {
+        DecksUiState.Loading -> Surface(modifier.fillMaxSize()) { Box(contentAlignment = Alignment.Center) { CircularProgressIndicator() } }
+        DecksUiState.Empty -> Surface(modifier.fillMaxSize()) { Box(contentAlignment = Alignment.Center) { Text("No decks yet") } }
+        is DecksUiState.Content -> DeckListScreen(state.decks, onOpen, modifier)
+    }
+}
+
+@Preview(name = "Content", showBackground = true)
+@Preview(name = "Content, dark", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun DecksContentPreview() {
+    NoteDeckTheme { DecksScreen(DecksUiState.Content(listOf(Deck("Kotlin basics", listOf(Card("1", "val?", "read-only"))))), onOpen = {}) }
+}
+
+@Preview(name = "Empty", showBackground = true)
+@Composable
+private fun DecksEmptyPreview() {
+    NoteDeckTheme { DecksScreen(DecksUiState.Empty, onOpen = {}) }
+}
