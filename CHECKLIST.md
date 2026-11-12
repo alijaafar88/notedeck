@@ -1,11 +1,12 @@
-# C4: Navigation, tabs and list-detail
+# M1: ViewModels with UiState
 
-Move NoteDeck to Navigation 3, with a back stack per tab and a tablet layout.
+Move the Deck List and Study screens' state into ViewModels, backed by the fake repository from K4.
 
-- [ ] Decks, Deck and Study are `@Serializable` `NavKey`s
-- [ ] `NavDisplay` shows the top of a back stack you own
-- [ ] Bottom tabs for Decks, Study and Settings each keep their own back stack
-- [ ] On an expanded width, the deck list and the deck show side by side
+- [ ] `DecksViewModel` exposes a `StateFlow<DecksUiState>` built with `stateIn` and `WhileSubscribed(5_000)`
+- [ ] `DecksUiState` is a sealed interface: `Loading`, `Content` and `Empty`
+- [ ] `StudyViewModel` holds the session and keeps its position in `SavedStateHandle`
+- [ ] Each screen is a route that collects with `collectAsStateWithLifecycle`, and a stateless screen with previews
+- [ ] ViewModel tests with Turbine, against `FakeDeckRepository`
 
 When you're done, run the app on an emulator and run `./gradlew test`, then answer the verify question in the KotlinDroid Daily app.
-Stuck? Compare with the `c4-solution` tag, but finish by hand first. Afterwards, try the AI-pair follow-up from the app.
+Stuck? Compare with the `m1-solution` tag, but finish by hand first. Afterwards, try the AI-pair follow-up from the app.

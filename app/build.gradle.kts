@@ -24,15 +24,21 @@ android {
 
 dependencies {
     implementation(project(":core:model"))
+    implementation(project(":core:domain"))
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.savedstate)
+    implementation(libs.androidx.lifecycle.viewmodel.navigation3)
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.androidx.navigation3.ui)
     implementation(libs.androidx.compose.material3.adaptive)
     implementation(libs.kotlinx.serialization.core)
     debugImplementation(libs.androidx.compose.ui.tooling)
     testImplementation(kotlin("test-junit"))
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.turbine)
 }
