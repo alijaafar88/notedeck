@@ -1,12 +1,12 @@
-# M2: The Study screen as MVI
+# M3: From an AppContainer to Hilt
 
-Rebuild the Study screen as MVI. Deck List stays MVVM.
+Wire NoteDeck by hand first, then let Hilt do it. The Hilt and KSP plugins and libraries are in the version catalog, ready to apply.
 
-- [ ] `StudyState` is one immutable data class for the whole session
-- [ ] `StudyIntent` is a sealed interface: `DeckLoaded`, `Reveal`, `Answer(knewIt)`, `Restart` and `Done`
-- [ ] A pure `reduce(state, intent)` handles every intent, with a table test
-- [ ] `Done` sends a `Close` effect through a buffered `Channel`; the route collects it in a `LaunchedEffect` and navigates back
-- [ ] Deck List stays MVVM; the README explains the choice in one paragraph
+- [ ] First by hand: replace `ServiceLocator` with an `AppContainer` owned by `NoteDeckApplication`
+- [ ] Then Hilt: `@HiltAndroidApp` on the Application and `@AndroidEntryPoint` on `MainActivity`
+- [ ] `DecksViewModel` and `StudyViewModel` are `@HiltViewModel` with `@Inject` constructors, obtained with `hiltViewModel()`
+- [ ] A module `@Binds` `DeckRepository` as a `@Singleton`, and an `@IoDispatcher` qualifier provides `Dispatchers.IO`
+- [ ] A Hilt test swaps in a fake repository with `@TestInstallIn`
 
 When you're done, run the app on an emulator and run `./gradlew test`, then answer the verify question in the KotlinDroid Daily app.
-Stuck? Compare with the `m2-solution` tag, but finish by hand first. Afterwards, try the AI-pair follow-up from the app.
+Stuck? Compare with the `m3-solution` tag, but finish by hand first. Its code shows only the final Hilt version, because Hilt replaces the AppContainer. Afterwards, try the AI-pair follow-up from the app.
