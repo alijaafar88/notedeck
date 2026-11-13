@@ -48,6 +48,15 @@ data class ReviewEntity(
     val reviewedAt: Instant,
 )
 
+/** One row of the cached shared-deck catalog, stamped with when it was fetched. */
+@Entity(tableName = "shared_decks")
+data class SharedDeckEntity(
+    @PrimaryKey val id: String,
+    val name: String,
+    val cardCount: Int,
+    val fetchedAt: Instant,
+)
+
 /** Not a table: a deck and its cards, loaded together. */
 data class DeckWithCards(
     @Embedded val deck: DeckEntity,

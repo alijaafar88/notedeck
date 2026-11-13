@@ -4,3 +4,6 @@
 build/
 local.properties
 *.iml
+# JVM crash and heap dumps
+*.hprof
+hs_err_pid*.log

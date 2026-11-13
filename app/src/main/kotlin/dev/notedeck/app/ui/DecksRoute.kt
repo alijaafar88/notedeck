@@ -2,6 +2,10 @@ package dev.notedeck.app.ui
 
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Surface
@@ -18,18 +22,26 @@ import dev.notedeck.model.Deck
 
 /** Stateful: gets the ViewModel and collects its state. */
 @Composable
-fun DecksRoute(onOpen: (Deck) -> Unit, modifier: Modifier = Modifier, viewModel: DecksViewModel = hiltViewModel()) {
+fun DecksRoute(
+    onOpen: (Deck) -> Unit,
+    modifier: Modifier = Modifier,
+    onBrowseShared: (() -> Unit)? = null,
+    viewModel: DecksViewModel = hiltViewModel(),
+) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    DecksScreen(state, onOpen, modifier)
+    DecksScreen(state, onOpen, modifier, onBrowseShared)
 }
 
 /** Stateless: draws whatever state it's given. */
 @Composable
-fun DecksScreen(state: DecksUiState, onOpen: (Deck) -> Unit, modifier: Modifier = Modifier) {
-    when (state) {
-        DecksUiState.Loading -> Surface(modifier.fillMaxSize()) { Box(contentAlignment = Alignment.Center) { CircularProgressIndicator() } }
-        DecksUiState.Empty -> Surface(modifier.fillMaxSize()) { Box(contentAlignment = Alignment.Center) { Text("No decks yet") } }
-        is DecksUiState.Content -> DeckListScreen(state.decks, onOpen, modifier)
+fun DecksScreen(state: DecksUiState, onOpen: (Deck) -> Unit, modifier: Modifier = Modifier, onBrowseShared: (() -> Unit)? = null) {
+    Column(modifier) {
+        onBrowseShared?.let { TextButton(onClick = it, modifier = Modifier.padding(horizontal = 8.dp)) { Text("Browse shared decks") } }
+        when (state) {
+            DecksUiState.Loading -> Surface(Modifier.fillMaxSize()) { Box(contentAlignment = Alignment.Center) { CircularProgressIndicator() } }
+            DecksUiState.Empty -> Surface(Modifier.fillMaxSize()) { Box(contentAlignment = Alignment.Center) { Text("No decks yet") } }
+            is DecksUiState.Content -> DeckListScreen(state.decks, onOpen)
+        }
     }
 }
 
@@ -37,7 +49,7 @@ fun DecksScreen(state: DecksUiState, onOpen: (Deck) -> Unit, modifier: Modifier 
 @Preview(name = "Content, dark", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun DecksContentPreview() {
-    NoteDeckTheme { DecksScreen(DecksUiState.Content(listOf(Deck("Kotlin basics", listOf(Card("1", "val?", "read-only"))))), onOpen = {}) }
+    NoteDeckTheme { DecksScreen(DecksUiState.Content(listOf(Deck("Kotlin basics", listOf(Card("1", "val?", "read-only"))))), onOpen = {}, onBrowseShared = {}) }
 }
 
 @Preview(name = "Empty", showBackground = true)

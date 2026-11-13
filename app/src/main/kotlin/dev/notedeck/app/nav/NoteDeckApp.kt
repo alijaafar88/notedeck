@@ -27,6 +27,7 @@ import dev.notedeck.app.ui.DeckRoute
 import dev.notedeck.app.ui.DecksRoute
 import dev.notedeck.app.ui.DecksViewModel
 import dev.notedeck.app.ui.SettingsRoute
+import dev.notedeck.app.ui.SharedDecksRoute
 import dev.notedeck.app.ui.StudyRoute
 
 private val labels = listOf("Decks", "Study", "Settings")
@@ -52,7 +53,8 @@ fun NoteDeckApp() {
             // Each entry gets its own ViewModelStore, so a screen's ViewModel is cleared when it's popped.
             entryDecorators = listOf(rememberSaveableStateHolderNavEntryDecorator(), rememberViewModelStoreNavEntryDecorator()),
             entryProvider = entryProvider {
-                entry<DecksKey> { DecksRoute(onOpen = { current.add(DeckKey(it.name)) }) }
+                entry<DecksKey> { DecksRoute(onOpen = { current.add(DeckKey(it.name)) }, onBrowseShared = { current.add(SharedDecksKey) }) }
+                entry<SharedDecksKey> { SharedDecksRoute() }
                 entry<DeckKey> { key ->
                     val detail = @Composable {
                         DeckRoute(

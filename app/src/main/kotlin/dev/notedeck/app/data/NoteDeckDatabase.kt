@@ -1,5 +1,6 @@
 package dev.notedeck.app.data
 
+import androidx.room3.AutoMigration
 import androidx.room3.ColumnTypeConverters
 import androidx.room3.Dao
 import androidx.room3.Database
@@ -9,6 +10,7 @@ import androidx.room3.Query
 import androidx.room3.RoomDatabase
 import androidx.room3.Transaction
 import androidx.room3.Upsert
+import kotlin.time.Instant
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -53,8 +55,38 @@ interface DeckDao {
     }
 }
 
-@Database(entities = [DeckEntity::class, CardEntity::class, ReviewEntity::class], version = 1)
+/** The shared-deck catalog: a cache of decks/index.json, refreshed from the network, read by the UI. */
+@Dao
+interface SharedDeckDao {
+    @Query("SELECT * FROM shared_decks ORDER BY name")
+    fun observeAll(): Flow<List<SharedDeckEntity>>
+
+    @Query("SELECT MAX(fetchedAt) FROM shared_decks")
+    suspend fun lastFetched(): Instant?
+
+    @Query("DELETE FROM shared_decks")
+    suspend fun deleteAll()
+
+    @Upsert
+    suspend fun upsertAll(decks: List<SharedDeckEntity>)
+
+    /** The new catalog replaces the old one in one transaction, so readers never see it half-written. */
+    @Transaction
+    suspend fun replaceAll(decks: List<SharedDeckEntity>) {
+        deleteAll()
+        upsertAll(decks)
+    }
+}
+
+/** Version 2 adds shared_decks. Room writes that migration from the exported schemas; learners keep their decks. */
+@Database(
+    entities = [DeckEntity::class, CardEntity::class, ReviewEntity::class, SharedDeckEntity::class],
+    version = 2,
+    autoMigrations = [AutoMigration(from = 1, to = 2)],
+)
 @ColumnTypeConverters(Converters::class)
 abstract class NoteDeckDatabase : RoomDatabase() {
     abstract fun deckDao(): DeckDao
+
+    abstract fun sharedDeckDao(): SharedDeckDao
 }

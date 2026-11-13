@@ -26,6 +26,9 @@ android {
 
     // Robolectric runs the Hilt test on the JVM and needs the app's resources.
     testOptions.unitTests.isIncludeAndroidResources = true
+
+    // BuildConfig.DEBUG decides whether HTTP calls are logged.
+    buildFeatures.buildConfig = true
 }
 
 // The schema history: commit it, so later versions can migrate learners' databases.
@@ -55,11 +58,24 @@ dependencies {
     implementation(libs.androidx.sqlite.framework)
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.datastore.preferences)
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.kotlinx.serialization)
+    implementation(libs.okhttp)
+    implementation(libs.okhttp.logging.interceptor)
     debugImplementation(libs.androidx.compose.ui.tooling)
     testImplementation(kotlin("test-junit"))
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
     testImplementation(libs.hilt.android.testing)
     testImplementation(libs.robolectric)
+    testImplementation(libs.okhttp.mockwebserver3)
     kspTest(libs.hilt.compiler)
+}
+
+// The migration test rebuilds the version 1 database from its exported schema.
+val schemasDir: File = file("schemas")
+tasks.withType<Test>().configureEach {
+    inputs.dir(schemasDir).withPropertyName("schemasDir").withPathSensitivity(PathSensitivity.RELATIVE)
+    systemProperty("schemas.dir", schemasDir.absolutePath)
 }
