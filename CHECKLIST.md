@@ -1,17 +1,21 @@
-# Q2: Modules, a Baseline Profile and a signed bundle
+# AI1: Agent-written tests, checked with mutations
 
-Everything Android lives in `:app`. Split it the way Now in Android does, share the build setup, make cold start faster, and produce a release bundle you could upload. The Gradle plugins for build logic, the Baseline Profile plugin, Macrobenchmark, UI Automator and profileinstaller are in the version catalog.
+NoteDeck has tests, but are they any good? This step brings in a coding agent (Gemini in Android Studio's Agent Mode, Claude Code, or another) to write more of them, and then checks the tests by breaking the code on purpose.
 
-- [ ] Split NoteDeck into `:core:model`, `:core:domain`, `:core:data`, `:core:ui`, `:feature:decks` and `:feature:study`, with `:app` wiring them together
-- [ ] A `build-logic` convention plugin replaces the Android setup each module repeated
-- [ ] A `:baselineprofile` module generates a profile from a real journey, and the app ships it with `profileinstaller`
-- [ ] The release build runs R8 and still loads shared decks
-- [ ] Signing reads from environment variables or a gitignored `keystore.properties`, and `bundleRelease` produces a signed `.aab`
+- [ ] Add `AGENTS.md` at the root: how to build and test, the architecture rules an agent can't guess from the code, and what it must never touch. Add a one-line `CLAUDE.md` that points to it.
+- [ ] Add `.aiexclude` so Android Studio's AI features never read `keystore.properties`, `local.properties` or key files
+- [ ] Ask an agent for a plan first, then tests for `reviewIntervalDays`, `isDue` and `RoomDeckRepository`. Review its diff with the AI1.4 checklist before you keep any of it
+- [ ] Make at least three deliberate bugs (mutations), one at a time, for example:
+  - `isDue`: `>=` becomes `>`
+  - `reviewIntervalDays`: drop the `coerceIn`
+  - `recordReview`: write nothing
+- [ ] For each mutation, run the tests, and record in `MUTATION.md` whether a test failed (caught) or not (survived), and which test. A mutant that survives means a missing test: add one and run the mutant again
+- [ ] Revert every mutation
 
 When you're done:
-- `./gradlew test assembleRelease` passes (unsigned without a key).
-- With your own upload key, `bundleRelease` writes a signed bundle; check it with `jarsigner -verify`. Never commit the keystore.
-- On an emulator running API 33 or later, `./gradlew :app:generateBaselineProfile` writes the profile.
+- `./gradlew test` passes on the unmutated code.
+- Every mutation in `MUTATION.md` is caught by a named test.
+- No existing test was weakened or deleted to make the build green.
 
 Then answer the verify question in the KotlinDroid Daily app.
-Stuck? Compare with the `q2-solution` tag, but finish by hand first. Afterwards, try the AI-pair follow-up from the app.
+Stuck? Compare with the `ai1-solution` tag, but finish by hand first. Afterwards, try the AI-pair follow-up from the app.
