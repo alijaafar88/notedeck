@@ -9,6 +9,7 @@ import dagger.hilt.components.SingletonComponent
 import dagger.hilt.testing.TestInstallIn
 import dev.notedeck.domain.DeckRepository
 import dev.notedeck.domain.FakeDeckRepository
+import dev.notedeck.model.Card
 import dev.notedeck.model.Deck
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -23,8 +24,13 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-/** A repository the test controls, with one known deck. */
-class TestDeckRepository @Inject constructor() : DeckRepository by FakeDeckRepository(listOf(Deck("Test deck", emptyList())))
+/** A repository the Hilt tests control: an empty deck to add cards to, and a two-card deck to study. */
+class TestDeckRepository @Inject constructor() : DeckRepository by FakeDeckRepository(
+    listOf(
+        Deck("Test deck", emptyList()),
+        Deck("Study deck", listOf(Card("s1", "Q1", "A1"), Card("s2", "Q2", "A2"))),
+    ),
+)
 
 /** Replaces the app's RepositoryModule in every Hilt test in this source set. */
 @Module
@@ -54,7 +60,7 @@ class RepositoryInjectionTest {
 
     @Test
     fun `the fake replaces the real repository`() = runTest {
-        assertEquals(listOf("Test deck"), repository.decks.first().map { it.name })
+        assertEquals(listOf("Test deck", "Study deck"), repository.decks.first().map { it.name })
     }
 
     @Test

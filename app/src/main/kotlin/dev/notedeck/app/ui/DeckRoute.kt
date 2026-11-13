@@ -48,7 +48,7 @@ fun DeckScreen(deck: Deck?, loading: Boolean, onStudy: () -> Unit, onAddCard: ()
                     Button(onClick = onStudy) { Text("Study this deck") }
                     OutlinedButton(onClick = onAddCard) { Text("Add card") }
                 }
-                Text("${deck.cards.size} cards", Modifier.padding(horizontal = 16.dp))
+                Text(cardCount(deck.cards.size), Modifier.padding(horizontal = 16.dp))
                 deck.cards.firstOrNull()?.let { CardDetailScreen(it) } ?: Text("No cards yet", Modifier.padding(16.dp))
             }
         }

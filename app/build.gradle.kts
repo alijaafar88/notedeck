@@ -74,6 +74,10 @@ dependencies {
     testImplementation(libs.robolectric)
     testImplementation(libs.okhttp.mockwebserver3)
     testImplementation(libs.androidx.work.testing)
+    // Compose UI tests run under Robolectric; the manifest entry they need is debug-only.
+    testImplementation(platform(libs.androidx.compose.bom))
+    testImplementation(libs.androidx.compose.ui.test.junit4)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
     kspTest(libs.hilt.compiler)
 }
 

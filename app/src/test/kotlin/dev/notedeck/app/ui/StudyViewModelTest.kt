@@ -2,22 +2,19 @@ package dev.notedeck.app.ui
 
 import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
+import dev.notedeck.app.testing.MainDispatcherRule
 import dev.notedeck.domain.FakeDeckRepository
 import dev.notedeck.model.Card
 import dev.notedeck.model.Deck
 import dev.notedeck.model.Review
 import dev.notedeck.model.ReviewGrade
-import kotlin.test.AfterTest
-import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.time.Clock
 import kotlin.time.Instant
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
+import org.junit.Rule
 
 /** The store around the reducer: loading from the repository, saved state and effects. */
 class StudyViewModelTest {
@@ -28,11 +25,9 @@ class StudyViewModelTest {
         override fun now() = this@StudyViewModelTest.now
     }
 
-    @BeforeTest
-    fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
-
-    @AfterTest
-    fun tearDown() = Dispatchers.resetMain()
+    // Unconfined: the deck loads as soon as the ViewModel starts, so intents can follow at once.
+    @get:Rule
+    val mainDispatcher = MainDispatcherRule(UnconfinedTestDispatcher())
 
     @Test
     fun `intents move through the deck`() = runTest {

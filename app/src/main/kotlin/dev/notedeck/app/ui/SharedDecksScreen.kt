@@ -130,7 +130,7 @@ private fun SharedDeckItem(deck: SharedDeckRow, onImport: (String) -> Unit) {
     Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
             Text(deck.name, style = MaterialTheme.typography.titleMedium)
-            Text("${deck.cardCount} cards", style = MaterialTheme.typography.bodySmall)
+            Text(cardCount(deck.cardCount), style = MaterialTheme.typography.bodySmall)
         }
         if (deck.imported) Text("Imported") else Button(onClick = { onImport(deck.id) }) { Text("Import") }
     }

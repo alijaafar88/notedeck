@@ -27,7 +27,7 @@ fun DeckListScreen(decks: List<Deck>, onOpen: (Deck) -> Unit, modifier: Modifier
                 Card(Modifier.fillMaxWidth().padding(vertical = 4.dp).clickable { onOpen(deck) }) {
                     Column(Modifier.padding(16.dp)) {
                         Text(deck.name, style = MaterialTheme.typography.titleMedium)
-                        Text("${deck.cards.size} cards", style = MaterialTheme.typography.bodyMedium)
+                        Text(cardCount(deck.cards.size), style = MaterialTheme.typography.bodyMedium)
                     }
                 }
             }
@@ -43,3 +43,6 @@ private val previewDecks = listOf(Deck("Kotlin basics", listOf(DeckCard("1", "va
 private fun DeckListPreview() {
     NoteDeckTheme { DeckListScreen(previewDecks, onOpen = {}) }
 }
+
+/** "1 card", "2 cards". */
+fun cardCount(count: Int): String = if (count == 1) "1 card" else "$count cards"
