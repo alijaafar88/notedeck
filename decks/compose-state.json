@@ -1,0 +1,22 @@
+{
+  "id": "compose-state",
+  "name": "Compose state",
+  "cards": [
+    {
+      "front": "What does remember do?",
+      "back": "Keeps a value across recompositions of the same composable"
+    },
+    {
+      "front": "remember or rememberSaveable to survive rotation?",
+      "back": "rememberSaveable"
+    },
+    {
+      "front": "What is state hoisting?",
+      "back": "Moving state up to a caller, which passes the value down and takes events back"
+    },
+    {
+      "front": "Which effect runs a suspend function when a key changes?",
+      "back": "LaunchedEffect"
+    }
+  ]
+}

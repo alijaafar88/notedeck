@@ -1,0 +1,12 @@
+[
+  {
+    "id": "kotlin-collections",
+    "name": "Kotlin collections",
+    "cardCount": 4
+  },
+  {
+    "id": "compose-state",
+    "name": "Compose state",
+    "cardCount": 4
+  }
+]

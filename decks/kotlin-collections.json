@@ -1,0 +1,22 @@
+{
+  "id": "kotlin-collections",
+  "name": "Kotlin collections",
+  "cards": [
+    {
+      "front": "What does map do?",
+      "back": "Returns a new list with the function applied to each element"
+    },
+    {
+      "front": "filter or takeWhile: which stops at the first miss?",
+      "back": "takeWhile"
+    },
+    {
+      "front": "What does groupBy return?",
+      "back": "A Map from each key to the list of elements with that key"
+    },
+    {
+      "front": "listOf or mutableListOf for a list you never change?",
+      "back": "listOf"
+    }
+  ]
+}
