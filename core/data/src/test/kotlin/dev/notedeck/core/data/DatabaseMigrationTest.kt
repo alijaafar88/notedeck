@@ -43,7 +43,7 @@ class DatabaseMigrationTest {
     }
 
     @Test
-    fun `upgrading from version 1 keeps decks and adds the shared-deck cache`() = runBlocking {
+    fun `upgrading from version 1 keeps decks and adds the shared-deck cache and the notes tables`() = runBlocking {
         val context = RuntimeEnvironment.getApplication()
         val file = context.getDatabasePath("migration-test.db")
         createVersion1(file)
@@ -59,6 +59,11 @@ class DatabaseMigrationTest {
             val shared = database.sharedDeckDao()
             shared.upsertAll(listOf(SharedDeckEntity("a", "A", 3, Instant.fromEpochMilliseconds(5))))
             assertEquals(Instant.fromEpochMilliseconds(5), shared.lastFetched())
+
+            // Version 3's notes tables exist and work.
+            val notes = database.noteDao()
+            notes.insert(NoteEntity(deckName = "Kotlin basics", text = "val is read-only", createdAt = Instant.fromEpochMilliseconds(6)), listOf(ChunkEntity(noteId = 0, position = 0, text = "val is read-only", embedding = byteArrayOf(1, 2, 3, 4))))
+            assertEquals(listOf("val is read-only"), notes.chunks().map { it.text })
         } finally {
             database.close()
         }

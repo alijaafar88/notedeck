@@ -57,6 +57,38 @@ data class SharedDeckEntity(
     val fetchedAt: Instant,
 )
 
+/** The notes a learner generated cards from, kept so Ask can answer from them. */
+@Entity(tableName = "notes")
+data class NoteEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val deckName: String,
+    val text: String,
+    val createdAt: Instant,
+)
+
+/** A passage of a note and its embedding: Float values, 4 bytes each, stored as a BLOB. */
+@Entity(
+    tableName = "note_chunks",
+    foreignKeys = [ForeignKey(entity = NoteEntity::class, parentColumns = ["id"], childColumns = ["noteId"], onDelete = ForeignKey.CASCADE)],
+    indices = [Index("noteId")],
+)
+class ChunkEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val noteId: Long,
+    val position: Int,
+    val text: String,
+    val embedding: ByteArray,
+)
+
+/** Not a table: a chunk with its note's deck, for search. */
+data class ChunkRow(val noteId: Long, val deckName: String, val text: String, val embedding: ByteArray)
+
+/** Not a table: a card's deck, box and last review, for the coach's statistics. */
+data class DeckCardSchedule(val deckName: String, val box: Int, val lastReviewedAt: Instant?)
+
+/** Not a table: one review with its deck, for the coach's statistics. */
+data class DeckReview(val deckName: String, val grade: ReviewGrade, val reviewedAt: Instant)
+
 /** Not a table: one row of DeckDao.schedules. */
 data class CardSchedule(val box: Int, val lastReviewedAt: Instant?)
 

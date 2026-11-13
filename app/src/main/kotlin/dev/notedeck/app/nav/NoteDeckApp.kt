@@ -24,6 +24,8 @@ import androidx.navigation3.ui.NavDisplay
 import androidx.window.core.layout.WindowSizeClass
 import dev.notedeck.app.BuildConfig
 import dev.notedeck.app.ui.SettingsRoute
+import dev.notedeck.feature.assistant.AskRoute
+import dev.notedeck.feature.assistant.CoachRoute
 import dev.notedeck.feature.decks.AddCardRoute
 import dev.notedeck.feature.decks.DeckRoute
 import dev.notedeck.feature.decks.DecksRoute
@@ -56,7 +58,16 @@ fun NoteDeckApp() {
             // Each entry gets its own ViewModelStore, so a screen's ViewModel is cleared when it's popped.
             entryDecorators = listOf(rememberSaveableStateHolderNavEntryDecorator(), rememberViewModelStoreNavEntryDecorator()),
             entryProvider = entryProvider {
-                entry<DecksKey> { DecksRoute(onOpen = { current.add(DeckKey(it.name)) }, onBrowseShared = { current.add(SharedDecksKey) }) }
+                entry<DecksKey> {
+                    DecksRoute(
+                        onOpen = { current.add(DeckKey(it.name)) },
+                        onBrowseShared = { current.add(SharedDecksKey) },
+                        onAsk = { current.add(AskKey) },
+                        onCoach = { current.add(CoachKey) },
+                    )
+                }
+                entry<AskKey> { AskRoute() }
+                entry<CoachKey> { CoachRoute() }
                 entry<SharedDecksKey> { SharedDecksRoute() }
                 entry<DeckKey> { key ->
                     val detail = @Composable {

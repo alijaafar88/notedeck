@@ -16,6 +16,8 @@ dependencies {
     implementation(libs.ktor.server.core)
     implementation(libs.ktor.server.netty)
     implementation(libs.anthropic.java)
+    // The study coach's agent loop.
+    implementation(libs.koog.agents)
     implementation(libs.kotlinx.serialization.json)
     testImplementation(kotlin("test"))
     testImplementation(libs.ktor.server.test.host)

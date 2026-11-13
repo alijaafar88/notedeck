@@ -8,7 +8,9 @@ import dev.notedeck.domain.DraftEvent
 import dev.notedeck.domain.FakeCardGenerator
 import dev.notedeck.domain.FakeDeckRepository
 import dev.notedeck.domain.InvalidReplyException
+import dev.notedeck.domain.NoteIndex
 import dev.notedeck.domain.NotesPhoto
+import dev.notedeck.domain.Passage
 import dev.notedeck.domain.OcrScanner
 import dev.notedeck.domain.Summarizer
 import dev.notedeck.domain.SummarizerStatus
@@ -87,7 +89,30 @@ class GenerateViewModelTest {
         repository: FakeDeckRepository = FakeDeckRepository(listOf(deck)),
         summaries: SummaryRouter = noSummaries,
         ocr: OcrScanner = OcrScanner { null },
-    ) = GenerateViewModel("Coroutines", CardGenerators(generators.toList()), repository, summaries, ocr)
+        notes: RecordingNotes = RecordingNotes(),
+    ) = GenerateViewModel("Coroutines", CardGenerators(generators.toList()), repository, summaries, ocr, notes)
+
+    private class RecordingNotes : NoteIndex {
+        val added = mutableListOf<Pair<String, String>>()
+
+        override suspend fun add(deckName: String, text: String) {
+            added += deckName to text
+        }
+
+        override suspend fun search(query: String, k: Int): List<Passage> = emptyList()
+    }
+
+    @Test
+    fun `saving keeps the notes the cards came from, for Ask`() = runTest {
+        val notes = RecordingNotes()
+        val viewModel = viewModel(FakeCardGenerator(), notes = notes)
+        viewModel.onNotesChange("Channel: a hot pipe")
+        viewModel.generate()
+        advanceUntilIdle()
+        viewModel.save()
+        advanceUntilIdle()
+        assertEquals(listOf("Coroutines" to "Channel: a hot pipe"), notes.added)
+    }
 
     @Test
     fun `with no summarizer, the screen says why instead of offering a button`() = runTest {

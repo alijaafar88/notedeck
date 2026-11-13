@@ -10,6 +10,7 @@ import dev.notedeck.domain.CardGenerators
 import dev.notedeck.domain.CardRules
 import dev.notedeck.domain.DeckRepository
 import dev.notedeck.domain.DraftEvent
+import dev.notedeck.domain.NoteIndex
 import dev.notedeck.domain.NotesPhoto
 import dev.notedeck.domain.OcrScanner
 import dev.notedeck.domain.Summary
@@ -69,6 +70,7 @@ class GenerateViewModel @AssistedInject constructor(
     private val repository: DeckRepository,
     private val summaries: SummaryRouter,
     private val ocr: OcrScanner,
+    private val noteIndex: NoteIndex,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(
         GenerateUiState(
@@ -218,6 +220,8 @@ class GenerateViewModel @AssistedInject constructor(
         val keep = state.cards.filter { it.complete }
         viewModelScope.launch {
             keep.forEach { repository.addCard(deckName, Card(UUID.randomUUID().toString(), it.front.trim(), it.back.trim())) }
+            // Keep the notes the cards came from, chunked and embedded, so Ask can answer from them later.
+            if (state.notes.isNotBlank()) noteIndex.add(deckName, state.notes)
             _uiState.update { it.copy(phase = GeneratePhase.Saved, savedCount = keep.size, cards = emptyList()) }
         }
     }

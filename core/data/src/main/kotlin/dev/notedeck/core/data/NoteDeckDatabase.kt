@@ -52,6 +52,19 @@ interface DeckDao {
     )
     suspend fun schedules(): List<CardSchedule>
 
+    /** schedules(), with each card's deck: for the coach's due counts. */
+    @Query(
+        "SELECT decks.name AS deckName, cards.box AS box, MAX(reviews.reviewedAt) AS lastReviewedAt FROM cards " +
+            "JOIN decks ON decks.id = cards.deckId LEFT JOIN reviews ON reviews.cardId = cards.id GROUP BY cards.id",
+    )
+    suspend fun deckSchedules(): List<DeckCardSchedule>
+
+    @Query(
+        "SELECT decks.name AS deckName, reviews.grade AS grade, reviews.reviewedAt AS reviewedAt FROM reviews " +
+            "JOIN cards ON cards.id = reviews.cardId JOIN decks ON decks.id = cards.deckId WHERE reviews.reviewedAt >= :since",
+    )
+    suspend fun reviewsSince(since: Instant): List<DeckReview>
+
     /** A deck and its cards, all or nothing. Returns false, and writes nothing, if the name is taken. */
     @Transaction
     suspend fun insertDeckWithCards(deck: DeckEntity, cards: List<CardEntity>): Boolean {
@@ -85,15 +98,46 @@ interface SharedDeckDao {
     }
 }
 
-/** Version 2 adds shared_decks. Room writes that migration from the exported schemas; learners keep their decks. */
+/** Notes and their embedded chunks, for Ask. Search loads every chunk: fine for one learner's notes. */
+@Dao
+interface NoteDao {
+    @Insert
+    suspend fun insertNote(note: NoteEntity): Long
+
+    @Insert
+    suspend fun insertChunks(chunks: List<ChunkEntity>)
+
+    /** A note and its chunks, all or nothing. The chunks' noteId is filled in here. */
+    @Transaction
+    suspend fun insert(note: NoteEntity, chunks: List<ChunkEntity>) {
+        val id = insertNote(note)
+        insertChunks(chunks.map { ChunkEntity(noteId = id, position = it.position, text = it.text, embedding = it.embedding) })
+    }
+
+    @Query(
+        "SELECT note_chunks.noteId AS noteId, notes.deckName AS deckName, note_chunks.text AS text, note_chunks.embedding AS embedding " +
+            "FROM note_chunks JOIN notes ON notes.id = note_chunks.noteId",
+    )
+    suspend fun chunks(): List<ChunkRow>
+
+    @Query("SELECT COUNT(*) FROM notes")
+    suspend fun noteCount(): Int
+}
+
+/**
+ * Version 2 adds shared_decks; version 3 adds notes and their chunks. Room writes both migrations from the
+ * exported schemas, so learners keep their decks.
+ */
 @Database(
-    entities = [DeckEntity::class, CardEntity::class, ReviewEntity::class, SharedDeckEntity::class],
-    version = 2,
-    autoMigrations = [AutoMigration(from = 1, to = 2)],
+    entities = [DeckEntity::class, CardEntity::class, ReviewEntity::class, SharedDeckEntity::class, NoteEntity::class, ChunkEntity::class],
+    version = 3,
+    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3)],
 )
 @ColumnTypeConverters(Converters::class)
 abstract class NoteDeckDatabase : RoomDatabase() {
     abstract fun deckDao(): DeckDao
 
     abstract fun sharedDeckDao(): SharedDeckDao
+
+    abstract fun noteDao(): NoteDao
 }

@@ -89,6 +89,7 @@ dependencies {
     // Reachable only from debug builds' Settings; R8 drops it from release builds as unused.
     implementation(project(":feature:playground"))
     implementation(project(":feature:generate"))
+    implementation(project(":feature:assistant"))
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.appcheck.playintegrity)
     implementation(platform(libs.androidx.compose.bom))

@@ -13,9 +13,11 @@ import kotlinx.coroutines.flow.flowOn
 
 fun main() {
     // Reads ANTHROPIC_API_KEY from this process's environment. The app never sees it.
-    val claude = ClaudeStreamer(AnthropicOkHttpClient.fromEnv(), model = System.getenv("CLAUDE_MODEL") ?: DEFAULT_MODEL)
+    val model = System.getenv("CLAUDE_MODEL") ?: DEFAULT_MODEL
+    val claude = ClaudeStreamer(AnthropicOkHttpClient.fromEnv(), model)
+    val coach = KoogCoach(apiKey = requireNotNull(System.getenv("ANTHROPIC_API_KEY")) { "Set ANTHROPIC_API_KEY" }, model = model)
     val port = System.getenv("PORT")?.toIntOrNull() ?: 8080
-    embeddedServer(Netty, port = port) { cardsModule(claude, RateLimiter(perMinute = 10)) }.start(wait = true)
+    embeddedServer(Netty, port = port) { cardsModule(claude, RateLimiter(perMinute = 10), coach) }.start(wait = true)
 }
 
 const val DEFAULT_MODEL = "claude-opus-5-5"

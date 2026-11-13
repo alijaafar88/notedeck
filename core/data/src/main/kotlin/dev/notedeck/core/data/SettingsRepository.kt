@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 enum class ThemeChoice { SYSTEM, LIGHT, DARK }
@@ -22,6 +23,9 @@ data class Settings(
     val theme: ThemeChoice = ThemeChoice.SYSTEM,
     val reminders: Boolean = false,
     val allowCloudAi: Boolean = false,
+    /** The study coach's applied plan, if any: the decks to focus on, and why. */
+    val focusDecks: List<String> = emptyList(),
+    val planReason: String = "",
 ) {
     companion object {
         const val DEFAULT_DAILY_GOAL = 20
@@ -38,6 +42,8 @@ class SettingsRepository @Inject constructor(private val store: DataStore<Prefer
             theme = ThemeChoice.entries.firstOrNull { it.name == preferences[THEME] } ?: ThemeChoice.SYSTEM,
             reminders = preferences[REMINDERS] ?: false,
             allowCloudAi = preferences[ALLOW_CLOUD_AI] ?: false,
+            focusDecks = preferences[FOCUS_DECKS]?.split("\n")?.filter(String::isNotEmpty).orEmpty(),
+            planReason = preferences[PLAN_REASON].orEmpty(),
         )
     }
 
@@ -58,10 +64,23 @@ class SettingsRepository @Inject constructor(private val store: DataStore<Prefer
         store.edit { it[ALLOW_CLOUD_AI] = allowed }
     }
 
+    suspend fun currentSettings(): Settings = settings.first()
+
+    /** One edit, so the goal and the plan it came from never disagree. */
+    suspend fun applyPlan(dailyGoal: Int, focusDecks: List<String>, reason: String) {
+        store.edit {
+            it[DAILY_GOAL] = dailyGoal.coerceIn(Settings.GOAL_RANGE)
+            it[FOCUS_DECKS] = focusDecks.joinToString("\n")
+            it[PLAN_REASON] = reason
+        }
+    }
+
     private companion object {
         val DAILY_GOAL = intPreferencesKey("daily_goal")
         val THEME = stringPreferencesKey("theme")
         val REMINDERS = booleanPreferencesKey("reminders")
         val ALLOW_CLOUD_AI = booleanPreferencesKey("allow_cloud_ai")
+        val FOCUS_DECKS = stringPreferencesKey("focus_decks")
+        val PLAN_REASON = stringPreferencesKey("plan_reason")
     }
 }
