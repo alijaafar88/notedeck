@@ -80,7 +80,11 @@ class SettingsViewModel @Inject constructor(
 
 /** Turning reminders on is the moment to ask for the notification permission (Android 13+). A no leaves them off. */
 @Composable
-fun SettingsRoute(modifier: Modifier = Modifier, viewModel: SettingsViewModel = hiltViewModel()) {
+fun SettingsRoute(
+    modifier: Modifier = Modifier,
+    onOpenPlayground: (() -> Unit)? = null,
+    viewModel: SettingsViewModel = hiltViewModel(),
+) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var denied by rememberSaveable { mutableStateOf(false) }
@@ -106,6 +110,7 @@ fun SettingsRoute(modifier: Modifier = Modifier, viewModel: SettingsViewModel = 
             onRemindersChange = onRemindersChange,
             remindersDenied = denied,
             onTestReminder = if (BuildConfig.DEBUG && it.reminders) viewModel::sendTestReminder else null,
+            onOpenPlayground = onOpenPlayground,
             modifier = modifier,
         )
     }
@@ -120,6 +125,7 @@ fun SettingsScreen(
     onRemindersChange: (Boolean) -> Unit = {},
     remindersDenied: Boolean = false,
     onTestReminder: (() -> Unit)? = null,
+    onOpenPlayground: (() -> Unit)? = null,
 ) {
     Surface(modifier) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -158,6 +164,7 @@ fun SettingsScreen(
                     Text(choice.label, Modifier.padding(start = 8.dp))
                 }
             }
+            onOpenPlayground?.let { OutlinedButton(onClick = it) { Text("Prompt Playground") } }
         }
     }
 }

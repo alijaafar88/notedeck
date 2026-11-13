@@ -58,7 +58,7 @@ android {
     // Robolectric runs the Hilt tests on the JVM and needs the app's resources.
     testOptions.unitTests.isIncludeAndroidResources = true
 
-    // BuildConfig.DEBUG shows the test reminder button in debug builds only.
+    // BuildConfig.DEBUG shows the test reminder button and the Prompt Playground in debug builds only.
     buildFeatures.buildConfig = true
 }
 
@@ -67,6 +67,8 @@ dependencies {
     implementation(project(":core:ui"))
     implementation(project(":feature:decks"))
     implementation(project(":feature:study"))
+    // Reachable only from debug builds' Settings; R8 drops it from release builds as unused.
+    implementation(project(":feature:playground"))
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.ui.tooling.preview)

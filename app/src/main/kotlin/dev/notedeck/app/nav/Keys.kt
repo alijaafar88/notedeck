@@ -9,3 +9,4 @@ import kotlinx.serialization.Serializable
 @Serializable data class AddCardKey(val deckName: String) : NavKey
 @Serializable data object SharedDecksKey : NavKey
 @Serializable data object SettingsKey : NavKey
+@Serializable data object PlaygroundKey : NavKey

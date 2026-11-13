@@ -22,12 +22,14 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import androidx.window.core.layout.WindowSizeClass
+import dev.notedeck.app.BuildConfig
 import dev.notedeck.app.ui.SettingsRoute
 import dev.notedeck.feature.decks.AddCardRoute
 import dev.notedeck.feature.decks.DeckRoute
 import dev.notedeck.feature.decks.DecksRoute
 import dev.notedeck.feature.decks.DecksViewModel
 import dev.notedeck.feature.decks.SharedDecksRoute
+import dev.notedeck.feature.playground.PlaygroundRoute
 import dev.notedeck.feature.study.StudyRoute
 
 private val labels = listOf("Decks", "Study", "Settings")
@@ -83,7 +85,10 @@ fun NoteDeckApp() {
                         selected = 0
                     })
                 }
-                entry<SettingsKey> { SettingsRoute() }
+                entry<SettingsKey> {
+                    SettingsRoute(onOpenPlayground = if (BuildConfig.DEBUG) ({ current.add(PlaygroundKey) }) else null)
+                }
+                entry<PlaygroundKey> { PlaygroundRoute() }
             },
         )
     }
