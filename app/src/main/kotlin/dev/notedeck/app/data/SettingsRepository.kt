@@ -2,6 +2,7 @@ package dev.notedeck.app.data
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -12,7 +13,12 @@ import kotlinx.coroutines.flow.map
 
 enum class ThemeChoice { SYSTEM, LIGHT, DARK }
 
-data class Settings(val dailyGoal: Int = DEFAULT_DAILY_GOAL, val theme: ThemeChoice = ThemeChoice.SYSTEM) {
+/** reminders is off until the learner turns it on, which is also when Android 13+ asks for the notification permission. */
+data class Settings(
+    val dailyGoal: Int = DEFAULT_DAILY_GOAL,
+    val theme: ThemeChoice = ThemeChoice.SYSTEM,
+    val reminders: Boolean = false,
+) {
     companion object {
         const val DEFAULT_DAILY_GOAL = 20
         val GOAL_RANGE = 5..200
@@ -26,6 +32,7 @@ class SettingsRepository @Inject constructor(private val store: DataStore<Prefer
         Settings(
             dailyGoal = preferences[DAILY_GOAL] ?: Settings.DEFAULT_DAILY_GOAL,
             theme = ThemeChoice.entries.firstOrNull { it.name == preferences[THEME] } ?: ThemeChoice.SYSTEM,
+            reminders = preferences[REMINDERS] ?: false,
         )
     }
 
@@ -38,8 +45,13 @@ class SettingsRepository @Inject constructor(private val store: DataStore<Prefer
         store.edit { it[THEME] = theme.name }
     }
 
+    suspend fun setReminders(on: Boolean) {
+        store.edit { it[REMINDERS] = on }
+    }
+
     private companion object {
         val DAILY_GOAL = intPreferencesKey("daily_goal")
         val THEME = stringPreferencesKey("theme")
+        val REMINDERS = booleanPreferencesKey("reminders")
     }
 }

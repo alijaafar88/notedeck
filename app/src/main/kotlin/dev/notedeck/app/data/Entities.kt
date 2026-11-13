@@ -57,6 +57,9 @@ data class SharedDeckEntity(
     val fetchedAt: Instant,
 )
 
+/** Not a table: one row of DeckDao.schedules. */
+data class CardSchedule(val box: Int, val lastReviewedAt: Instant?)
+
 /** Not a table: a deck and its cards, loaded together. */
 data class DeckWithCards(
     @Embedded val deck: DeckEntity,

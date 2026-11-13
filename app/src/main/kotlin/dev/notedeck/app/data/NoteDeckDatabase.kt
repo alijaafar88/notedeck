@@ -45,6 +45,13 @@ interface DeckDao {
     @Query("SELECT * FROM reviews ORDER BY reviewedAt")
     fun observeReviews(): Flow<List<ReviewEntity>>
 
+    /** Each card's box and when it was last reviewed (null if never): all the reminder needs. */
+    @Query(
+        "SELECT cards.box AS box, MAX(reviews.reviewedAt) AS lastReviewedAt FROM cards " +
+            "LEFT JOIN reviews ON reviews.cardId = cards.id GROUP BY cards.id",
+    )
+    suspend fun schedules(): List<CardSchedule>
+
     /** A deck and its cards, all or nothing. Returns false, and writes nothing, if the name is taken. */
     @Transaction
     suspend fun insertDeckWithCards(deck: DeckEntity, cards: List<CardEntity>): Boolean {

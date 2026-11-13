@@ -70,4 +70,13 @@ class DeckDaoTest {
         assertEquals(ReviewGrade.HARD, review.grade)
         assertEquals(at, review.reviewedAt)
     }
+
+    @Test
+    fun `schedules give each card's box and latest review`() = runTest {
+        dao.insertDeckWithCards(DeckEntity(name = "Kotlin"), listOf(card("a"), card("b")))
+        dao.insertReview(ReviewEntity(cardId = "a", grade = ReviewGrade.GOOD, reviewedAt = Instant.fromEpochMilliseconds(10)))
+        dao.insertReview(ReviewEntity(cardId = "a", grade = ReviewGrade.GOOD, reviewedAt = Instant.fromEpochMilliseconds(20)))
+        val schedules = dao.schedules().sortedBy { it.lastReviewedAt?.toEpochMilliseconds() ?: -1 }
+        assertEquals(listOf(CardSchedule(1, null), CardSchedule(1, Instant.fromEpochMilliseconds(20))), schedules)
+    }
 }

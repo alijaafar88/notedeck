@@ -63,6 +63,9 @@ dependencies {
     implementation(libs.retrofit.converter.kotlinx.serialization)
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging.interceptor)
+    implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.androidx.hilt.work)
+    ksp(libs.androidx.hilt.compiler)
     debugImplementation(libs.androidx.compose.ui.tooling)
     testImplementation(kotlin("test-junit"))
     testImplementation(libs.kotlinx.coroutines.test)
@@ -70,6 +73,7 @@ dependencies {
     testImplementation(libs.hilt.android.testing)
     testImplementation(libs.robolectric)
     testImplementation(libs.okhttp.mockwebserver3)
+    testImplementation(libs.androidx.work.testing)
     kspTest(libs.hilt.compiler)
 }
 

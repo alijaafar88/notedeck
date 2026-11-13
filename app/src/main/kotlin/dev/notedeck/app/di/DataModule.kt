@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStoreFile
 import androidx.room3.Room
 import androidx.sqlite.driver.AndroidSQLiteDriver
+import androidx.work.WorkManager
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -45,6 +46,10 @@ object StorageModule {
 
     @Provides
     fun deckDao(database: NoteDeckDatabase): DeckDao = database.deckDao()
+
+    /** Configured by NoteDeckApplication (Hilt's worker factory) the first time it's asked for. */
+    @Provides
+    fun workManager(@ApplicationContext context: Context): WorkManager = WorkManager.getInstance(context)
 
     /** DataStore needs exactly one instance per file. */
     @Provides

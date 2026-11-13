@@ -4,6 +4,11 @@ import dev.notedeck.model.Card
 import dev.notedeck.model.ReviewGrade
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Instant
 
 class LeitnerTest {
     private data class Case(val box: Int, val grade: ReviewGrade, val expected: Int)
@@ -28,5 +33,19 @@ class LeitnerTest {
     fun `only the box changes`() {
         val card = Card("1", "front", "back", 2)
         assertEquals(card.copy(box = 3), nextReview(card, ReviewGrade.GOOD))
+    }
+
+    @Test
+    fun `intervals double from box to box`() {
+        assertEquals(listOf(1, 2, 4, 8, 16), (FIRST_BOX..LAST_BOX).map(::reviewIntervalDays))
+    }
+
+    @Test
+    fun `a card is due when its interval has passed, or it was never reviewed`() {
+        val now = Instant.parse("2026-11-12T09:00:00Z")
+        assertTrue(isDue(box = 1, lastReviewedAt = null, now = now))
+        assertTrue(isDue(box = 2, lastReviewedAt = now - 2.days, now = now))
+        assertFalse(isDue(box = 2, lastReviewedAt = now - 47.hours, now = now))
+        assertFalse(isDue(box = 5, lastReviewedAt = now - 15.days, now = now))
     }
 }

@@ -11,6 +11,10 @@ import dev.notedeck.app.data.SharedDeckDao
 import dev.notedeck.app.network.ConnectivityNetworkMonitor
 import dev.notedeck.app.network.NetworkMonitor
 import dev.notedeck.app.network.SharedDecksApi
+import dev.notedeck.app.work.AndroidReminderNotifier
+import dev.notedeck.app.work.DueCardCounter
+import dev.notedeck.app.work.ReminderNotifier
+import dev.notedeck.app.work.RoomDueCardCounter
 import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 import kotlinx.serialization.json.Json
@@ -52,6 +56,16 @@ object NetworkModule {
 abstract class NetworkMonitorModule {
     @Binds
     abstract fun bindMonitor(impl: ConnectivityNetworkMonitor): NetworkMonitor
+}
+
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class ReminderModule {
+    @Binds
+    abstract fun bindDueCards(impl: RoomDueCardCounter): DueCardCounter
+
+    @Binds
+    abstract fun bindNotifier(impl: AndroidReminderNotifier): ReminderNotifier
 }
 
 /** The server may add fields; app versions already installed must keep working. */
