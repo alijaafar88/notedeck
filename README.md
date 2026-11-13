@@ -22,3 +22,25 @@ Then follow `CHECKLIST.md`. Every start tag builds, and every solution tag passe
 ## Why Deck List is MVVM and Study is MVI
 
 Deck List shows whatever the repository holds and has no rules of its own, so a ViewModel that maps a Flow to `DecksUiState` with `stateIn` is all it needs; intent classes and a reducer would add code without catching any bugs. Study is different: position, the known count, whether the answer is showing and whether the session is over must always agree, and several actions change them. Funnelling every action through one pure `reduce(state, intent)` keeps those values consistent, lets a table test cover every intent in a few lines, and makes a bug reproducible from the list of intents that caused it. One-off navigation goes through a buffered `Channel`, so it's neither lost nor repeated across rotation.
+
+## Running the AI features
+
+NoteDeck never holds a provider API key. Everything below is optional: without it, a fresh clone still builds, and the missing providers show as "not set up".
+
+**Gemini (Firebase AI Logic).** Create a Firebase project, add an Android app with the package `dev.notedeck`, and enable Firebase AI Logic with the Gemini Developer API. Then add the app's values to `local.properties` (gitignored). They identify the project but aren't secrets; App Check is what protects it.
+
+```properties
+notedeck.firebase.appId=1:1234567890:android:abc123
+notedeck.firebase.apiKey=AIza...
+notedeck.firebase.projectId=your-project
+```
+
+Release builds install App Check with Play Integrity; enforce it in the Firebase console before you ship.
+
+**Claude (your own backend).** `backend/` is a small Ktor server that holds the Anthropic key and streams Claude's reply to the app. Put the key in the server's environment, never in a file in Git:
+
+```bash
+ANTHROPIC_API_KEY=... ./gradlew :backend:run
+```
+
+Debug builds on the emulator reach it at `http://10.0.2.2:8080`. To use another address, set `notedeck.proxyUrl` in `local.properties`; anything other than the emulator needs https.

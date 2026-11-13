@@ -33,15 +33,23 @@ fun DeckRoute(
     onStudy: () -> Unit,
     onAddCard: () -> Unit,
     modifier: Modifier = Modifier,
+    onGenerate: () -> Unit = {},
     viewModel: DecksViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val deck = (state as? DecksUiState.Content)?.decks?.firstOrNull { it.name == name }
-    DeckScreen(deck, loading = state == DecksUiState.Loading, onStudy = onStudy, onAddCard = onAddCard, modifier = modifier)
+    DeckScreen(deck, loading = state == DecksUiState.Loading, onStudy = onStudy, onAddCard = onAddCard, onGenerate = onGenerate, modifier = modifier)
 }
 
 @Composable
-fun DeckScreen(deck: Deck?, loading: Boolean, onStudy: () -> Unit, onAddCard: () -> Unit, modifier: Modifier = Modifier) {
+fun DeckScreen(
+    deck: Deck?,
+    loading: Boolean,
+    onStudy: () -> Unit,
+    onAddCard: () -> Unit,
+    modifier: Modifier = Modifier,
+    onGenerate: () -> Unit = {},
+) {
     Surface(modifier.fillMaxSize()) {
         when {
             loading -> Box(contentAlignment = Alignment.Center) { CircularProgressIndicator() }
@@ -51,6 +59,7 @@ fun DeckScreen(deck: Deck?, loading: Boolean, onStudy: () -> Unit, onAddCard: ()
                     Button(onClick = onStudy) { Text("Study this deck") }
                     OutlinedButton(onClick = onAddCard) { Text("Add card") }
                 }
+                OutlinedButton(onClick = onGenerate, modifier = Modifier.padding(horizontal = 16.dp)) { Text("Generate cards from notes") }
                 Text(cardCount(deck.cards.size), Modifier.padding(horizontal = 16.dp))
                 deck.cards.firstOrNull()?.let { CardDetailScreen(it) } ?: Text("No cards yet", Modifier.padding(16.dp))
             }

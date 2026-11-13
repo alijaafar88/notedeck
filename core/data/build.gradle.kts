@@ -27,6 +27,14 @@ dependencies {
     implementation(libs.retrofit.converter.kotlinx.serialization)
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging.interceptor)
+    // Gemini through Firebase AI Logic: no Gemini key in the app.
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.ai)
+    constraints {
+        // firebase-ai's HTTP engine brings okhttp-sse 4.x, which calls an OkHttp 4 internal that OkHttp 5 removed.
+        // Keep every OkHttp module on the same version, or R8 (and the app at runtime) finds the class missing.
+        implementation(libs.okhttp.sse) { because("okhttp-sse must match okhttp") }
+    }
     api(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.hilt.work)
     ksp(libs.androidx.hilt.compiler)

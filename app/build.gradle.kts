@@ -16,6 +16,15 @@ val keystoreProperties = Properties().apply {
 
 fun secret(property: String, env: String): String? = keystoreProperties.getProperty(property) ?: System.getenv(env)
 
+// AI settings from the gitignored local.properties (see README). None of them is a secret: Firebase's values
+// identify the project, and App Check, not hiding them, is what protects it. Provider API keys never come here.
+val localProperties = Properties().apply {
+    val file = rootProject.file("local.properties")
+    if (file.exists()) file.inputStream().use(::load)
+}
+
+fun local(name: String, default: String = ""): String = localProperties.getProperty(name) ?: default
+
 android {
     namespace = "dev.notedeck.app"
     compileSdk = 37
@@ -26,6 +35,12 @@ android {
         targetSdk = 37
         versionCode = 1
         versionName = "0.1"
+
+        buildConfigField("String", "FIREBASE_APP_ID", "\"${local("notedeck.firebase.appId")}\"")
+        buildConfigField("String", "FIREBASE_API_KEY", "\"${local("notedeck.firebase.apiKey")}\"")
+        buildConfigField("String", "FIREBASE_PROJECT_ID", "\"${local("notedeck.firebase.projectId")}\"")
+        // Your backend for Claude. Empty means none, and Claude shows as unavailable.
+        buildConfigField("String", "PROXY_URL", "\"${local("notedeck.proxyUrl")}\"")
     }
 
     compileOptions {
@@ -47,6 +62,10 @@ android {
     }
 
     buildTypes {
+        // The emulator reaches the backend on your computer at 10.0.2.2. Other builds need an https URL.
+        debug {
+            buildConfigField("String", "PROXY_URL", "\"${local("notedeck.proxyUrl", "http://10.0.2.2:8080")}\"")
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
@@ -69,6 +88,9 @@ dependencies {
     implementation(project(":feature:study"))
     // Reachable only from debug builds' Settings; R8 drops it from release builds as unused.
     implementation(project(":feature:playground"))
+    implementation(project(":feature:generate"))
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.appcheck.playintegrity)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.ui.tooling.preview)

@@ -29,6 +29,7 @@ import dev.notedeck.feature.decks.DeckRoute
 import dev.notedeck.feature.decks.DecksRoute
 import dev.notedeck.feature.decks.DecksViewModel
 import dev.notedeck.feature.decks.SharedDecksRoute
+import dev.notedeck.feature.generate.GenerateRoute
 import dev.notedeck.feature.playground.PlaygroundRoute
 import dev.notedeck.feature.study.StudyRoute
 
@@ -63,6 +64,7 @@ fun NoteDeckApp() {
                             key.name,
                             onStudy = { stacks[1].add(StudyKey(key.name)); selected = 1 },
                             onAddCard = { current.add(AddCardKey(key.name)) },
+                            onGenerate = { current.add(GenerateKey(key.name)) },
                         )
                     }
                     if (wide) {
@@ -89,6 +91,7 @@ fun NoteDeckApp() {
                     SettingsRoute(onOpenPlayground = if (BuildConfig.DEBUG) ({ current.add(PlaygroundKey) }) else null)
                 }
                 entry<PlaygroundKey> { PlaygroundRoute() }
+                entry<GenerateKey> { key -> GenerateRoute(key.deckName, onDone = { current.removeLastOrNull() }) }
             },
         )
     }
