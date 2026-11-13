@@ -8,6 +8,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 
 class LeitnerTest {
@@ -47,5 +48,20 @@ class LeitnerTest {
         assertTrue(isDue(box = 2, lastReviewedAt = now - 2.days, now = now))
         assertFalse(isDue(box = 2, lastReviewedAt = now - 47.hours, now = now))
         assertFalse(isDue(box = 5, lastReviewedAt = now - 15.days, now = now))
+    }
+
+    @Test
+    fun `boxes outside 1 to 5 use the nearest box's interval`() {
+        assertEquals(listOf(1, 1, 16, 16), listOf(-3, 0, 6, 99).map(::reviewIntervalDays))
+    }
+
+    @Test
+    fun `in every box, a card falls due exactly one interval after its review`() {
+        val now = Instant.parse("2026-11-12T09:00:00Z")
+        for (box in FIRST_BOX..LAST_BOX) {
+            val interval = reviewIntervalDays(box).days
+            assertTrue(isDue(box, lastReviewedAt = now - interval, now = now), "box $box, on time")
+            assertFalse(isDue(box, lastReviewedAt = now - interval + 1.seconds, now = now), "box $box, a second early")
+        }
     }
 }

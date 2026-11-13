@@ -1,0 +1,5 @@
+# Keep secrets out of Android Studio's AI features (Gemini). Same syntax as .gitignore.
+keystore.properties
+local.properties
+*.jks
+*.keystore

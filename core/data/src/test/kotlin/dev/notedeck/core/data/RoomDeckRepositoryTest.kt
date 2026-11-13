@@ -5,10 +5,13 @@ import androidx.sqlite.driver.AndroidSQLiteDriver
 import app.cash.turbine.test
 import dev.notedeck.model.Card
 import dev.notedeck.model.Deck
+import dev.notedeck.model.Review
+import dev.notedeck.model.ReviewGrade
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.time.Instant
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.runner.RunWith
@@ -63,5 +66,13 @@ class RoomDeckRepositoryTest {
         repository.decks.first()
         repository.addDeck(Deck("Flow", listOf(Card("f1", "Cold or hot?", "Cold"))))
         assertEquals(listOf("f1"), repository.decks.first().first { it.name == "Flow" }.cards.map { it.id })
+    }
+
+    @Test
+    fun `a recorded review is stored, with its grade and time`() = runTest {
+        val card = repository.decks.first().first().cards.first()
+        val review = Review(card.id, ReviewGrade.GOOD, Instant.parse("2026-11-12T09:00:00Z"))
+        repository.recordReview(review)
+        assertEquals(listOf(review), db.deckDao().observeReviews().first().map { it.toDomain() })
     }
 }
