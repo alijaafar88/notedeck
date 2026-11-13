@@ -7,3 +7,8 @@ local.properties
 # JVM crash and heap dumps
 *.hprof
 hs_err_pid*.log
+
+# Release signing: never commit keys or their passwords
+keystore.properties
+*.jks
+*.keystore

@@ -86,3 +86,9 @@ kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", versi
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 androidx-room = { id = "androidx.room3", version.ref = "room" }
+
+# Convention plugins (build-logic/convention)
+notedeck-android-library = { id = "notedeck.android.library" }
+notedeck-android-compose = { id = "notedeck.android.compose" }
+notedeck-android-hilt = { id = "notedeck.android.hilt" }
+notedeck-android-feature = { id = "notedeck.android.feature" }

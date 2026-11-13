@@ -1,11 +1,20 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.ksp)
-    alias(libs.plugins.hilt)
-    alias(libs.plugins.androidx.room)
+    alias(libs.plugins.notedeck.android.hilt)
+    alias(libs.plugins.androidx.baselineprofile)
 }
+
+// Signing secrets come from a gitignored keystore.properties, or from environment variables in CI. Never from Git.
+val keystoreProperties = Properties().apply {
+    val file = rootProject.file("keystore.properties")
+    if (file.exists()) file.inputStream().use(::load)
+}
+
+fun secret(property: String, env: String): String? = keystoreProperties.getProperty(property) ?: System.getenv(env)
 
 android {
     namespace = "dev.notedeck.app"
@@ -24,66 +33,61 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    // Robolectric runs the Hilt test on the JVM and needs the app's resources.
+    signingConfigs {
+        // Only when a key is present, so CI and contributors without one can still build an unsigned release.
+        val store = secret("storeFile", "NOTEDECK_KEYSTORE")
+        if (store != null) {
+            create("release") {
+                storeFile = file(store)
+                storePassword = secret("storePassword", "NOTEDECK_KEYSTORE_PASSWORD")
+                keyAlias = secret("keyAlias", "NOTEDECK_KEY_ALIAS")
+                keyPassword = secret("keyPassword", "NOTEDECK_KEY_PASSWORD")
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = signingConfigs.findByName("release")
+        }
+    }
+
+    // Robolectric runs the Hilt tests on the JVM and needs the app's resources.
     testOptions.unitTests.isIncludeAndroidResources = true
 
-    // BuildConfig.DEBUG decides whether HTTP calls are logged.
+    // BuildConfig.DEBUG shows the test reminder button in debug builds only.
     buildFeatures.buildConfig = true
 }
 
-// The schema history: commit it, so later versions can migrate learners' databases.
-room3 {
-    schemaDirectory("$projectDir/schemas")
-}
-
 dependencies {
-    implementation(project(":core:model"))
-    implementation(project(":core:domain"))
+    implementation(project(":core:data"))
+    implementation(project(":core:ui"))
+    implementation(project(":feature:decks"))
+    implementation(project(":feature:study"))
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
-    implementation(libs.androidx.lifecycle.viewmodel.savedstate)
     implementation(libs.androidx.lifecycle.viewmodel.navigation3)
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.androidx.navigation3.ui)
     implementation(libs.androidx.compose.material3.adaptive)
     implementation(libs.kotlinx.serialization.core)
-    implementation(libs.hilt.android)
-    ksp(libs.hilt.compiler)
     implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
-    implementation(libs.androidx.room.runtime)
-    implementation(libs.androidx.sqlite.framework)
-    ksp(libs.androidx.room.compiler)
-    implementation(libs.androidx.datastore.preferences)
-    implementation(libs.kotlinx.serialization.json)
-    implementation(libs.retrofit)
-    implementation(libs.retrofit.converter.kotlinx.serialization)
-    implementation(libs.okhttp)
-    implementation(libs.okhttp.logging.interceptor)
-    implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.hilt.work)
-    ksp(libs.androidx.hilt.compiler)
+    // Applies the Baseline Profile on install, so the first launch is already compiled ahead of time.
+    implementation(libs.androidx.profileinstaller)
+    baselineProfile(project(":baselineprofile"))
     debugImplementation(libs.androidx.compose.ui.tooling)
     testImplementation(kotlin("test-junit"))
     testImplementation(libs.kotlinx.coroutines.test)
-    testImplementation(libs.turbine)
-    testImplementation(libs.hilt.android.testing)
     testImplementation(libs.robolectric)
-    testImplementation(libs.okhttp.mockwebserver3)
-    testImplementation(libs.androidx.work.testing)
-    // Compose UI tests run under Robolectric; the manifest entry they need is debug-only.
     testImplementation(platform(libs.androidx.compose.bom))
     testImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
-    kspTest(libs.hilt.compiler)
-}
-
-// The migration test rebuilds the version 1 database from its exported schema.
-val schemasDir: File = file("schemas")
-tasks.withType<Test>().configureEach {
-    inputs.dir(schemasDir).withPropertyName("schemasDir").withPathSensitivity(PathSensitivity.RELATIVE)
-    systemProperty("schemas.dir", schemasDir.absolutePath)
 }

@@ -5,8 +5,8 @@ import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import androidx.work.WorkManager
 import dagger.hilt.android.HiltAndroidApp
-import dev.notedeck.app.work.AndroidReminderNotifier
-import dev.notedeck.app.work.scheduleBackgroundWork
+import dev.notedeck.core.data.work.AndroidReminderNotifier
+import dev.notedeck.core.data.work.scheduleBackgroundWork
 import javax.inject.Inject
 
 /**

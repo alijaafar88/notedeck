@@ -1,4 +1,6 @@
 pluginManagement {
+    // Convention plugins shared by the modules below.
+    includeBuild("build-logic")
     repositories {
         google()
         gradlePluginPortal()
@@ -17,5 +19,11 @@ rootProject.name = "notedeck"
 
 include(":core:model")
 include(":core:domain")
+include(":core:data")
+include(":core:ui")
+include(":core:testing")
+include(":feature:decks")
+include(":feature:study")
 include(":cli")
 include(":app")
+include(":baselineprofile")

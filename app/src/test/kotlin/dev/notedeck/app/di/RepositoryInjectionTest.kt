@@ -7,6 +7,7 @@ import dagger.hilt.android.testing.HiltAndroidTest
 import dagger.hilt.android.testing.HiltTestApplication
 import dagger.hilt.components.SingletonComponent
 import dagger.hilt.testing.TestInstallIn
+import dev.notedeck.core.data.di.RepositoryModule
 import dev.notedeck.domain.DeckRepository
 import dev.notedeck.domain.FakeDeckRepository
 import dev.notedeck.model.Card

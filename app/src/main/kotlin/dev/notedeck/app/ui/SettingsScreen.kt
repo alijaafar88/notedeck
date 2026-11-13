@@ -39,10 +39,11 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.notedeck.app.BuildConfig
-import dev.notedeck.app.data.Settings
-import dev.notedeck.app.data.SettingsRepository
-import dev.notedeck.app.data.ThemeChoice
-import dev.notedeck.app.work.ReviewReminderWorker
+import dev.notedeck.core.data.Settings
+import dev.notedeck.core.data.SettingsRepository
+import dev.notedeck.core.data.ThemeChoice
+import dev.notedeck.core.data.work.ReviewReminderWorker
+import dev.notedeck.core.ui.NoteDeckTheme
 import javax.inject.Inject
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow

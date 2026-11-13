@@ -13,22 +13,22 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
-import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import androidx.window.core.layout.WindowSizeClass
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import dev.notedeck.app.ui.AddCardRoute
-import dev.notedeck.app.ui.DeckRoute
-import dev.notedeck.app.ui.DecksRoute
-import dev.notedeck.app.ui.DecksViewModel
 import dev.notedeck.app.ui.SettingsRoute
-import dev.notedeck.app.ui.SharedDecksRoute
-import dev.notedeck.app.ui.StudyRoute
+import dev.notedeck.feature.decks.AddCardRoute
+import dev.notedeck.feature.decks.DeckRoute
+import dev.notedeck.feature.decks.DecksRoute
+import dev.notedeck.feature.decks.DecksViewModel
+import dev.notedeck.feature.decks.SharedDecksRoute
+import dev.notedeck.feature.study.StudyRoute
 
 private val labels = listOf("Decks", "Study", "Settings")
 

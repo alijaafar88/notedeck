@@ -8,11 +8,11 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dagger.hilt.android.AndroidEntryPoint
-import dev.notedeck.app.data.Settings
-import dev.notedeck.app.data.SettingsRepository
-import dev.notedeck.app.data.ThemeChoice
 import dev.notedeck.app.nav.NoteDeckApp
-import dev.notedeck.app.ui.NoteDeckTheme
+import dev.notedeck.core.data.Settings
+import dev.notedeck.core.data.SettingsRepository
+import dev.notedeck.core.data.ThemeChoice
+import dev.notedeck.core.ui.NoteDeckTheme
 import javax.inject.Inject
 
 @AndroidEntryPoint

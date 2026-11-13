@@ -13,6 +13,9 @@ jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      # Empty unless the repository has signing secrets, so forks and pull requests still build (unsigned).
+      NOTEDECK_KEYSTORE_BASE64: ${{ secrets.NOTEDECK_KEYSTORE_BASE64 }}
     steps:
       - uses: actions/checkout@v7
 
@@ -25,8 +28,19 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6
 
       # Local tests: plain JVM and Robolectric (Room, Compose UI flows, workers). No emulator needed.
+      # assembleRelease runs R8, so a missing keep rule fails here rather than on a phone.
       - name: Test and build
-        run: ./gradlew test assembleDebug
+        run: ./gradlew test assembleDebug assembleRelease
+
+      - name: Signed release bundle
+        if: env.NOTEDECK_KEYSTORE_BASE64 != ''
+        env:
+          NOTEDECK_KEYSTORE_PASSWORD: ${{ secrets.NOTEDECK_KEYSTORE_PASSWORD }}
+          NOTEDECK_KEY_ALIAS: ${{ secrets.NOTEDECK_KEY_ALIAS }}
+          NOTEDECK_KEY_PASSWORD: ${{ secrets.NOTEDECK_KEY_PASSWORD }}
+        run: |
+          echo "$NOTEDECK_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/upload.jks"
+          NOTEDECK_KEYSTORE="$RUNNER_TEMP/upload.jks" ./gradlew bundleRelease
 
       - name: Keep test reports when something fails
         if: failure()
