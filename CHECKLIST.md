@@ -1,21 +1,19 @@
-# AI1: Agent-written tests, checked with mutations
+# AI2: A Prompt Playground with a fake model
 
-NoteDeck has tests, but are they any good? This step brings in a coding agent (Gemini in Android Studio's Agent Mode, Claude Code, or another) to write more of them, and then checks the tests by breaking the code on purpose.
+Before NoteDeck talks to a real model, give it a place to try prompts, and an interface that every model can sit behind. In this step the model is a fake; AI3 and AI4 plug Gemini, Claude and Gemini Nano into the same interface.
 
-- [ ] Add `AGENTS.md` at the root: how to build and test, the architecture rules an agent can't guess from the code, and what it must never touch. Add a one-line `CLAUDE.md` that points to it.
-- [ ] Add `.aiexclude` so Android Studio's AI features never read `keystore.properties`, `local.properties` or key files
-- [ ] Ask an agent for a plan first, then tests for `reviewIntervalDays`, `isDue` and `RoomDeckRepository`. Review its diff with the AI1.4 checklist before you keep any of it
-- [ ] Make at least three deliberate bugs (mutations), one at a time, for example:
-  - `isDue`: `>=` becomes `>`
-  - `reviewIntervalDays`: drop the `coerceIn`
-  - `recordReview`: write nothing
-- [ ] For each mutation, run the tests, and record in `MUTATION.md` whether a test failed (caught) or not (survived), and which test. A mutant that survives means a missing test: add one and run the mutant again
-- [ ] Revert every mutation
+- [ ] In `:core:domain`, add a `TextModel` interface that streams a reply as a `Flow<String>` for a request holding the prompt and the temperature. No SDK types in it.
+- [ ] Add `FakeTextModel`: the same reply every time at temperature 0, varied above it, streamed a word at a time with a short delay
+- [ ] Add a `:feature:playground` module (the feature convention plugin) with a `PlaygroundViewModel`: an immutable `PlaygroundUiState` (prompt, temperature, output, running, error) exposed as a `StateFlow`
+- [ ] Running again cancels the previous run, and Stop cancels the current one
+- [ ] Add a stateless `PlaygroundScreen` (prompt field, temperature slider, Run or Stop, the streamed output) with previews, and a `PlaygroundRoute`
+- [ ] Bind `TextModel` to the fake in `:app`, and show a "Prompt Playground" button in Settings in debug builds only
+- [ ] Test the ViewModel with fakes: the output streams in, a new run replaces the old one, the temperature reaches the model, an error is shown
 
 When you're done:
-- `./gradlew test` passes on the unmutated code.
-- Every mutation in `MUTATION.md` is caught by a named test.
-- No existing test was weakened or deleted to make the build green.
+- `./gradlew test assembleDebug assembleRelease` passes.
+- In a debug build, Settings opens the Playground; at temperature 0, running the same prompt twice gives the same output.
+- A release build has no way to reach the Playground.
 
 Then answer the verify question in the KotlinDroid Daily app.
-Stuck? Compare with the `ai1-solution` tag, but finish by hand first. Afterwards, try the AI-pair follow-up from the app.
+Stuck? Compare with the `ai2-solution` tag, but finish by hand first. Afterwards, try the AI-pair follow-up from the app.
