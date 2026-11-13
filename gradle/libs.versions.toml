@@ -29,6 +29,7 @@ ktor = "3.6.1"
 anthropicJava = "3.8.0"
 mlkitGenai = "1.0.0-beta1"
 mlkitTextRecognition = "16.0.1"
+koog = "1.3.0"
 
 [libraries]
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
@@ -95,6 +96,9 @@ mlkit-genai-summarization = { module = "com.google.mlkit:genai-summarization", v
 mlkit-text-recognition = { module = "com.google.mlkit:text-recognition", version.ref = "mlkitTextRecognition" }
 kotlinx-coroutines-guava = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-guava", version.ref = "coroutines" }
 kotlinx-coroutines-play-services = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-play-services", version.ref = "coroutines" }
+
+# AI5: the study coach's agent loop, on the backend (JetBrains Koog).
+koog-agents = { module = "ai.koog:koog-agents", version.ref = "koog" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
