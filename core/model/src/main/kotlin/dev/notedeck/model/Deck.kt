@@ -13,3 +13,6 @@ sealed interface ReviewResult {
 
     data class Missed(override val card: Card) : ReviewResult
 }
+
+/** One answer in a study session. Stored by the data layer; the time comes from an injected clock. */
+data class Review(val cardId: String, val grade: ReviewGrade, val reviewedAt: kotlin.time.Instant)

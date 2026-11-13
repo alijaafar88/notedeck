@@ -3,7 +3,7 @@ package dev.notedeck.app
 import dev.notedeck.model.Card
 import dev.notedeck.model.Deck
 
-/** Fake data until NoteDeck has storage (Phase 4). */
+/** Seeded into Room the first time the app runs, so a new install isn't empty. */
 object SampleDecks {
     val all = listOf(
         Deck(

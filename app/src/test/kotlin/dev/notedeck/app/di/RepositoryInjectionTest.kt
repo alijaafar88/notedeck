@@ -24,7 +24,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /** A repository the test controls, with one known deck. */
-class TestDeckRepository @Inject constructor() : DeckRepository by (FakeDeckRepository().apply { addDeck(Deck("Test deck", emptyList())) })
+class TestDeckRepository @Inject constructor() : DeckRepository by FakeDeckRepository(listOf(Deck("Test deck", emptyList())))
 
 /** Replaces the app's RepositoryModule in every Hilt test in this source set. */
 @Module
