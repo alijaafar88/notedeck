@@ -1,19 +1,22 @@
-# AI2: A Prompt Playground with a fake model
+# AI3: Generate cards from notes, with Gemini or Claude
 
-Before NoteDeck talks to a real model, give it a place to try prompts, and an interface that every model can sit behind. In this step the model is a fake; AI3 and AI4 plug Gemini, Claude and Gemini Nano into the same interface.
+Learners paste notes, or photograph them, and NoteDeck drafts flashcards. The learner watches the draft stream in, edits or deletes each card, and saves the ones they want. Two cloud models sit behind one interface, and neither puts an API key in the app. Firebase, Ktor and the Anthropic Java SDK are in the version catalog.
 
-- [ ] In `:core:domain`, add a `TextModel` interface that streams a reply as a `Flow<String>` for a request holding the prompt and the temperature. No SDK types in it.
-- [ ] Add `FakeTextModel`: the same reply every time at temperature 0, varied above it, streamed a word at a time with a short delay
-- [ ] Add a `:feature:playground` module (the feature convention plugin) with a `PlaygroundViewModel`: an immutable `PlaygroundUiState` (prompt, temperature, output, running, error) exposed as a `StateFlow`
-- [ ] Running again cancels the previous run, and Stop cancels the current one
-- [ ] Add a stateless `PlaygroundScreen` (prompt field, temperature slider, Run or Stop, the streamed output) with previews, and a `PlaygroundRoute`
-- [ ] Bind `TextModel` to the fake in `:app`, and show a "Prompt Playground" button in Settings in debug builds only
-- [ ] Test the ViewModel with fakes: the output streams in, a new run replaces the old one, the temperature reaches the model, an error is shown
+- [ ] In `:core:domain`, add a `CardGenerator` interface that streams events (text pieces, then the parsed drafts), and the rules every draft must pass: not blank, short enough, not already in the deck
+- [ ] In `:core:data`, implement it three ways:
+  - Gemini through Firebase AI Logic, with a JSON response schema and photos as input
+  - Claude through your own backend, reading its server-sent events with OkHttp
+  - a fake, for tests and for running without either
+- [ ] Initialise Firebase from `local.properties` values, never a committed file. Without them, Gemini shows as unavailable and the app still runs. Install App Check (Play Integrity) for release builds
+- [ ] Add `backend/`: a Ktor server that reads `ANTHROPIC_API_KEY` from its environment, caps the size of the notes, rate-limits each client, and streams Claude's reply as server-sent events
+- [ ] Add a Generate screen, opened from a deck: notes or a photo, a provider choice, the streamed draft, then an editable list of cards and Save
+- [ ] Test the rules, the ViewModel with a fake generator, the Claude client against MockWebServer, and the backend with a fake Claude
 
 When you're done:
-- `./gradlew test assembleDebug assembleRelease` passes.
-- In a debug build, Settings opens the Playground; at temperature 0, running the same prompt twice gives the same output.
-- A release build has no way to reach the Playground.
+- `./gradlew test assembleDebug assembleRelease` passes with no Firebase values and no API key.
+- In a debug build on the emulator, generating with the fake drafts cards, and saving adds them to the deck.
+- With `ANTHROPIC_API_KEY` set, `./gradlew :backend:run` serves `POST /cards`, and the Claude option works from the emulator.
+- `git grep` finds no API key anywhere.
 
 Then answer the verify question in the KotlinDroid Daily app.
-Stuck? Compare with the `ai2-solution` tag, but finish by hand first. Afterwards, try the AI-pair follow-up from the app.
+Stuck? Compare with the `ai3-solution` tag, but finish by hand first. Afterwards, try the AI-pair follow-up from the app.
