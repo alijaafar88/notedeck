@@ -1,22 +1,18 @@
-# AI3: Generate cards from notes, with Gemini or Claude
+# AI4: Summarise notes on the phone, and scan notes from a photo
 
-Learners paste notes, or photograph them, and NoteDeck drafts flashcards. The learner watches the draft stream in, edits or deletes each card, and saves the ones they want. Two cloud models sit behind one interface, and neither puts an API key in the app. Firebase, Ktor and the Anthropic Java SDK are in the version catalog.
+Two on-device features for the Generate screen: a summary of the notes from Gemini Nano, falling back to the cloud only when the learner allows it, and text read from a photo of notes, entirely on the phone. ML Kit GenAI summarization (beta), ML Kit text recognition and the coroutine adapters are in the version catalog.
 
-- [ ] In `:core:domain`, add a `CardGenerator` interface that streams events (text pieces, then the parsed drafts), and the rules every draft must pass: not blank, short enough, not already in the deck
-- [ ] In `:core:data`, implement it three ways:
-  - Gemini through Firebase AI Logic, with a JSON response schema and photos as input
-  - Claude through your own backend, reading its server-sent events with OkHttp
-  - a fake, for tests and for running without either
-- [ ] Initialise Firebase from `local.properties` values, never a committed file. Without them, Gemini shows as unavailable and the app still runs. Install App Check (Play Integrity) for release builds
-- [ ] Add `backend/`: a Ktor server that reads `ANTHROPIC_API_KEY` from its environment, caps the size of the notes, rate-limits each client, and streams Claude's reply as server-sent events
-- [ ] Add a Generate screen, opened from a deck: notes or a photo, a provider choice, the streamed draft, then an editable list of cards and Save
-- [ ] Test the rules, the ViewModel with a fake generator, the Claude client against MockWebServer, and the backend with a fake Claude
+- [ ] In `:core:domain`, add a `Summarizer` interface (status, download, summarize) and a router that picks the phone first, then the cloud only if the learner allowed it, and otherwise says why it can't
+- [ ] In `:core:data`, implement it with ML Kit GenAI summarization (check the feature, download it, run, close) and with your backend (add `POST /summary` there)
+- [ ] Add a "Use cloud AI when this phone can't" setting, off by default
+- [ ] Add an `OcrScanner` interface and an ML Kit text recognition implementation; "Scan notes from a photo" adds the photo's text to the notes
+- [ ] Show every summary state on the Generate screen: on this phone, in the cloud, needs a download, downloading, not on this phone, running, failed
+- [ ] Test the router as a table, the ViewModel with fakes for each state, and the backend's new route
 
 When you're done:
-- `./gradlew test assembleDebug assembleRelease` passes with no Firebase values and no API key.
-- In a debug build on the emulator, generating with the fake drafts cards, and saving adds them to the deck.
-- With `ANTHROPIC_API_KEY` set, `./gradlew :backend:run` serves `POST /cards`, and the Claude option works from the emulator.
-- `git grep` finds no API key anywhere.
+- `./gradlew test assembleDebug assembleRelease` passes.
+- On the emulator (which has no Gemini Nano): with cloud AI off, the screen explains why there's no summary; with it on, the summary comes from the backend.
+- Scanning a photo of printed notes fills in their text, with the network off.
 
 Then answer the verify question in the KotlinDroid Daily app.
-Stuck? Compare with the `ai3-solution` tag, but finish by hand first. Afterwards, try the AI-pair follow-up from the app.
+Stuck? Compare with the `ai4-solution` tag, but finish by hand first. Afterwards, try the AI-pair follow-up from the app.
