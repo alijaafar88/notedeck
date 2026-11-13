@@ -30,6 +30,11 @@ dependencies {
     // Gemini through Firebase AI Logic: no Gemini key in the app.
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.ai)
+    // On-device AI: summaries on Gemini Nano (ML Kit GenAI, beta) and OCR with the model bundled in the APK.
+    implementation(libs.mlkit.genai.summarization)
+    implementation(libs.mlkit.text.recognition)
+    implementation(libs.kotlinx.coroutines.guava)
+    implementation(libs.kotlinx.coroutines.play.services)
     constraints {
         // firebase-ai's HTTP engine brings okhttp-sse 4.x, which calls an OkHttp 4 internal that OkHttp 5 removed.
         // Keep every OkHttp module on the same version, or R8 (and the app at runtime) finds the class missing.

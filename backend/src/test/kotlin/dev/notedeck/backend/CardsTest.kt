@@ -1,6 +1,7 @@
 package dev.notedeck.backend
 
 import dev.notedeck.domain.CardRules
+import dev.notedeck.domain.SummaryRules
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
@@ -36,6 +37,14 @@ class CardsTest {
             response.bodyAsText(),
         )
         assertEquals(CardRules.SYSTEM_PROMPT to CardRules.userPrompt("Flows are cold"), received.single())
+    }
+
+    @Test
+    fun `the summary route sends the summary prompt, fixed on the server`() = testApplication {
+        application { cardsModule(recording("- Flows are cold"), RateLimiter(perMinute = 10)) }
+        val body = client.post("/summary") { setBody("Flows are cold") }.bodyAsText()
+        assertEquals("data: \"- Flows are cold\"\n\nevent: done\ndata: \n\n", body)
+        assertEquals(SummaryRules.SYSTEM_PROMPT, received.single().first)
     }
 
     @Test

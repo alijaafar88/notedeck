@@ -9,6 +9,12 @@ import dev.notedeck.domain.FakeCardGenerator
 import dev.notedeck.domain.FakeDeckRepository
 import dev.notedeck.domain.InvalidReplyException
 import dev.notedeck.domain.NotesPhoto
+import dev.notedeck.domain.OcrScanner
+import dev.notedeck.domain.Summarizer
+import dev.notedeck.domain.SummarizerStatus
+import dev.notedeck.domain.Summary
+import dev.notedeck.domain.SummaryRoute
+import dev.notedeck.domain.SummaryRouter
 import dev.notedeck.model.Card
 import dev.notedeck.model.Deck
 import kotlin.test.Test
@@ -53,8 +59,117 @@ class GenerateViewModelTest {
         }
     }
 
-    private fun viewModel(vararg generators: CardGenerator, repository: FakeDeckRepository = FakeDeckRepository(listOf(deck))) =
-        GenerateViewModel("Coroutines", CardGenerators(generators.toList()), repository)
+    private class FakeSummarizer(
+        override val onDevice: Boolean,
+        var status: SummarizerStatus,
+        private val fails: Boolean = false,
+    ) : Summarizer {
+        var downloads = 0
+
+        override suspend fun status() = status
+
+        override suspend fun download() {
+            downloads++
+            status = SummarizerStatus.Available
+        }
+
+        override suspend fun summarize(text: String): String {
+            delay(100)
+            if (fails) throw IllegalStateException("Gemini Nano is busy")
+            return "- ${text.take(5)}"
+        }
+    }
+
+    private val noSummaries = SummaryRouter(FakeSummarizer(true, SummarizerStatus.Unavailable), FakeSummarizer(false, SummarizerStatus.Unavailable)) { false }
+
+    private fun viewModel(
+        vararg generators: CardGenerator,
+        repository: FakeDeckRepository = FakeDeckRepository(listOf(deck)),
+        summaries: SummaryRouter = noSummaries,
+        ocr: OcrScanner = OcrScanner { null },
+    ) = GenerateViewModel("Coroutines", CardGenerators(generators.toList()), repository, summaries, ocr)
+
+    @Test
+    fun `with no summarizer, the screen says why instead of offering a button`() = runTest {
+        val viewModel = viewModel(Scripted())
+        advanceUntilIdle()
+        viewModel.onNotesChange("notes")
+        assertEquals(SummaryRoute.NotOnThisPhone, viewModel.uiState.value.summaryRoute)
+        assertFalse(viewModel.uiState.value.canSummarize)
+    }
+
+    @Test
+    fun `a summary from the phone is labelled as made on the phone`() = runTest {
+        val router = SummaryRouter(FakeSummarizer(true, SummarizerStatus.Available), FakeSummarizer(false, SummarizerStatus.Available)) { true }
+        val viewModel = viewModel(Scripted(), summaries = router)
+        viewModel.onNotesChange("Flows are cold")
+        advanceUntilIdle()
+        viewModel.summarize()
+        advanceTimeBy(50)
+        assertTrue(viewModel.uiState.value.summarizing)
+        advanceUntilIdle()
+        assertEquals(Summary("- Flows", onDevice = true), viewModel.uiState.value.summary)
+        assertFalse(viewModel.uiState.value.summarizing)
+    }
+
+    @Test
+    fun `cloud summaries appear only once the learner allows them`() = runTest {
+        var allowed = false
+        val router = SummaryRouter(FakeSummarizer(true, SummarizerStatus.Unavailable), FakeSummarizer(false, SummarizerStatus.Available)) { allowed }
+        assertEquals(SummaryRoute.NotOnThisPhone, viewModel(Scripted(), summaries = router).also { advanceUntilIdle() }.uiState.value.summaryRoute)
+        allowed = true
+        val viewModel = viewModel(Scripted(), summaries = router)
+        viewModel.onNotesChange("Flows are cold")
+        advanceUntilIdle()
+        assertEquals(SummaryRoute.Cloud, viewModel.uiState.value.summaryRoute)
+        viewModel.summarize()
+        advanceUntilIdle()
+        assertEquals(Summary("- Flows", onDevice = false), viewModel.uiState.value.summary)
+    }
+
+    @Test
+    fun `a failed summary shows the reason and keeps the notes`() = runTest {
+        val router = SummaryRouter(FakeSummarizer(true, SummarizerStatus.Available, fails = true), FakeSummarizer(false, SummarizerStatus.Unavailable)) { false }
+        val viewModel = viewModel(Scripted(), summaries = router)
+        viewModel.onNotesChange("Flows are cold")
+        advanceUntilIdle()
+        viewModel.summarize()
+        advanceUntilIdle()
+        assertEquals("Gemini Nano is busy", viewModel.uiState.value.error)
+        assertEquals("Flows are cold", viewModel.uiState.value.notes)
+        assertNull(viewModel.uiState.value.summary)
+    }
+
+    @Test
+    fun `downloading the on-device model makes on-device summaries available`() = runTest {
+        val phone = FakeSummarizer(true, SummarizerStatus.Downloadable)
+        val viewModel = viewModel(Scripted(), summaries = SummaryRouter(phone, FakeSummarizer(false, SummarizerStatus.Unavailable)) { false })
+        advanceUntilIdle()
+        assertEquals(SummaryRoute.NeedsDownload, viewModel.uiState.value.summaryRoute)
+        viewModel.downloadSummaries()
+        advanceUntilIdle()
+        assertEquals(1, phone.downloads)
+        assertEquals(SummaryRoute.OnDevice, viewModel.uiState.value.summaryRoute)
+    }
+
+    @Test
+    fun `a scanned photo's text is added to the notes`() = runTest {
+        val viewModel = viewModel(Scripted(), ocr = OcrScanner { "Channel: a hot pipe" })
+        viewModel.onNotesChange("Flow: a cold stream")
+        viewModel.scan(NotesPhoto(byteArrayOf(1)))
+        advanceUntilIdle()
+        assertEquals("Flow: a cold stream\nChannel: a hot pipe", viewModel.uiState.value.notes)
+        assertFalse(viewModel.uiState.value.scanning)
+    }
+
+    @Test
+    fun `a photo with no text says so`() = runTest {
+        val viewModel = viewModel(Scripted())
+        viewModel.scan(NotesPhoto(byteArrayOf(1)))
+        advanceUntilIdle()
+        assertEquals("No text found in that photo.", viewModel.uiState.value.error)
+        assertEquals("", viewModel.uiState.value.notes)
+    }
 
     @Test
     fun `unavailable providers are listed but the first available one is chosen`() {

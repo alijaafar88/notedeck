@@ -1,6 +1,7 @@
 package dev.notedeck.backend
 
 import dev.notedeck.domain.CardRules
+import dev.notedeck.domain.SummaryRules
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
@@ -8,6 +9,7 @@ import io.ktor.server.plugins.origin
 import io.ktor.server.request.receiveText
 import io.ktor.server.response.respondText
 import io.ktor.server.response.respondTextWriter
+import io.ktor.server.routing.Routing
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
@@ -24,38 +26,45 @@ fun interface TextStreamer {
 class StreamFailure(message: String, val retryable: Boolean) : Exception(message)
 
 /**
- * POST /cards: plain-text notes in, server-sent events out. Each `data:` line holds one JSON-encoded piece of
- * the reply; the stream ends with `event: done`, or `event: error` and a message.
+ * Plain-text notes in, server-sent events out. Each `data:` line holds one JSON-encoded piece of the reply;
+ * the stream ends with `event: done`, or `event: error` and a message.
+ *   POST /cards    flashcards as a JSON array
+ *   POST /summary  a short summary
  */
 fun Application.cardsModule(streamer: TextStreamer, limiter: RateLimiter) {
     routing {
         get("/health") { call.respondText("ok") }
+        streamingRoute("/cards", streamer, limiter, CardRules.SYSTEM_PROMPT)
+        streamingRoute("/summary", streamer, limiter, SummaryRules.SYSTEM_PROMPT)
+    }
+}
 
-        post("/cards") {
-            val client = call.request.origin.remoteAddress
-            if (!limiter.tryAcquire(client)) {
-                call.respondText("Too many requests", status = HttpStatusCode.TooManyRequests)
-                return@post
-            }
-            val notes = call.receiveText()
-            when {
-                notes.isBlank() -> call.respondText("No notes", status = HttpStatusCode.BadRequest)
-                notes.length > CardRules.MAX_NOTES -> call.respondText("Notes too long", status = HttpStatusCode.PayloadTooLarge)
-                else -> call.respondTextWriter(ContentType.Text.EventStream) {
-                    try {
-                        streamer.stream(CardRules.SYSTEM_PROMPT, CardRules.userPrompt(notes)).collect { piece ->
-                            write("data: ${Json.encodeToString(piece)}\n\n")
-                            flush()
-                        }
-                        write("event: done\ndata: \n\n")
-                    } catch (e: CancellationException) {
-                        throw e
-                    } catch (e: Exception) {
-                        val message = (e as? StreamFailure)?.message ?: "The card service failed. Try again later."
-                        write("event: error\ndata: ${Json.encodeToString(message)}\n\n")
+/** One model call per request: the system prompt is fixed here, on the server; the learner only sends notes. */
+private fun Routing.streamingRoute(path: String, streamer: TextStreamer, limiter: RateLimiter, system: String) {
+    post(path) {
+        val client = call.request.origin.remoteAddress
+        if (!limiter.tryAcquire(client)) {
+            call.respondText("Too many requests", status = HttpStatusCode.TooManyRequests)
+            return@post
+        }
+        val notes = call.receiveText()
+        when {
+            notes.isBlank() -> call.respondText("No notes", status = HttpStatusCode.BadRequest)
+            notes.length > CardRules.MAX_NOTES -> call.respondText("Notes too long", status = HttpStatusCode.PayloadTooLarge)
+            else -> call.respondTextWriter(ContentType.Text.EventStream) {
+                try {
+                    streamer.stream(system, CardRules.userPrompt(notes)).collect { piece ->
+                        write("data: ${Json.encodeToString(piece)}\n\n")
+                        flush()
                     }
-                    flush()
+                    write("event: done\ndata: \n\n")
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    val message = (e as? StreamFailure)?.message ?: "The AI service failed. Try again later."
+                    write("event: error\ndata: ${Json.encodeToString(message)}\n\n")
                 }
+                flush()
             }
         }
     }

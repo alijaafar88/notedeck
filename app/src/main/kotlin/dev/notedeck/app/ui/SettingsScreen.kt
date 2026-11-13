@@ -72,6 +72,10 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { repository.setReminders(on) }
     }
 
+    fun setAllowCloudAi(allowed: Boolean) {
+        viewModelScope.launch { repository.setAllowCloudAi(allowed) }
+    }
+
     /** Debug builds only. Forcing the periodic job doesn't work: WorkManager skips periodic work that runs before its schedule. */
     fun sendTestReminder() {
         workManager.enqueue(OneTimeWorkRequestBuilder<ReviewReminderWorker>().build())
@@ -111,6 +115,7 @@ fun SettingsRoute(
             remindersDenied = denied,
             onTestReminder = if (BuildConfig.DEBUG && it.reminders) viewModel::sendTestReminder else null,
             onOpenPlayground = onOpenPlayground,
+            onAllowCloudAiChange = viewModel::setAllowCloudAi,
             modifier = modifier,
         )
     }
@@ -126,6 +131,7 @@ fun SettingsScreen(
     remindersDenied: Boolean = false,
     onTestReminder: (() -> Unit)? = null,
     onOpenPlayground: (() -> Unit)? = null,
+    onAllowCloudAiChange: (Boolean) -> Unit = {},
 ) {
     Surface(modifier) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -153,6 +159,16 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodySmall,
                 )
+            }
+            Row(
+                Modifier.fillMaxWidth().toggleable(value = settings.allowCloudAi, role = Role.Switch, onValueChange = onAllowCloudAiChange),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text("Use cloud AI when this phone can't", style = MaterialTheme.typography.titleMedium)
+                    Text("Your notes are sent to NoteDeck's server only for features this phone can't run itself", style = MaterialTheme.typography.bodySmall)
+                }
+                Switch(checked = settings.allowCloudAi, onCheckedChange = null)
             }
             Text("Theme", style = MaterialTheme.typography.titleMedium)
             ThemeChoice.entries.forEach { choice ->

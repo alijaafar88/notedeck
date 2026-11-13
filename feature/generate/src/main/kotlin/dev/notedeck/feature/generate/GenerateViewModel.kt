@@ -11,6 +11,10 @@ import dev.notedeck.domain.CardRules
 import dev.notedeck.domain.DeckRepository
 import dev.notedeck.domain.DraftEvent
 import dev.notedeck.domain.NotesPhoto
+import dev.notedeck.domain.OcrScanner
+import dev.notedeck.domain.Summary
+import dev.notedeck.domain.SummaryRoute
+import dev.notedeck.domain.SummaryRouter
 import dev.notedeck.model.Card
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
@@ -41,10 +45,17 @@ data class GenerateUiState(
     val cards: List<EditableCard> = emptyList(),
     val error: String? = null,
     val savedCount: Int = 0,
+    val summaryRoute: SummaryRoute? = null,
+    val summarizing: Boolean = false,
+    val summary: Summary? = null,
+    val scanning: Boolean = false,
 ) {
     val provider: ProviderChoice? get() = providers.firstOrNull { it.id == providerId }
     val canGenerate: Boolean get() = phase == GeneratePhase.Writing && provider?.available == true && (notes.isNotBlank() || hasPhoto)
     val canSave: Boolean get() = phase == GeneratePhase.Reviewing && cards.any { it.complete }
+    val canSummarize: Boolean
+        get() = notes.isNotBlank() && !summarizing && phase == GeneratePhase.Writing &&
+            (summaryRoute == SummaryRoute.OnDevice || summaryRoute == SummaryRoute.Cloud)
 }
 
 /**
@@ -56,6 +67,8 @@ class GenerateViewModel @AssistedInject constructor(
     @Assisted private val deckName: String,
     private val generators: CardGenerators,
     private val repository: DeckRepository,
+    private val summaries: SummaryRouter,
+    private val ocr: OcrScanner,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(
         GenerateUiState(
@@ -68,6 +81,71 @@ class GenerateViewModel @AssistedInject constructor(
 
     private var photo: NotesPhoto? = null
     private var job: Job? = null
+
+    init {
+        viewModelScope.launch { refreshSummaryRoute() }
+    }
+
+    /** Asked again after each summary or download, and whenever the screen opens, so a Settings change shows up. */
+    private suspend fun refreshSummaryRoute() {
+        val route = summaries.route()
+        _uiState.update { it.copy(summaryRoute = route) }
+    }
+
+    fun summarize() {
+        val notes = _uiState.value.takeIf { it.canSummarize }?.notes ?: return
+        viewModelScope.launch {
+            _uiState.update { it.copy(summarizing = true, summary = null, error = null) }
+            try {
+                val summary = summaries.summarize(notes)
+                _uiState.update { it.copy(summarizing = false, summary = summary) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _uiState.update { it.copy(summarizing = false, error = e.message ?: "Couldn't summarise these notes. Try again.") }
+            }
+            refreshSummaryRoute()
+        }
+    }
+
+    fun downloadSummaries() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(summaryRoute = SummaryRoute.Downloading, error = null) }
+            try {
+                summaries.download()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _uiState.update { it.copy(error = "The download didn't finish. Try again on Wi-Fi.") }
+            }
+            refreshSummaryRoute()
+        }
+    }
+
+    /** Reads a photo's text on the phone and adds it to the notes. The photo itself goes nowhere. */
+    fun scan(picked: NotesPhoto?) {
+        if (picked == null) {
+            _uiState.update { it.copy(error = "Couldn't open that photo.") }
+            return
+        }
+        viewModelScope.launch {
+            _uiState.update { it.copy(scanning = true, error = null) }
+            val text = try {
+                ocr.read(picked)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                null
+            }
+            _uiState.update { state ->
+                if (text == null) {
+                    state.copy(scanning = false, error = "No text found in that photo.")
+                } else {
+                    state.copy(scanning = false, notes = listOf(state.notes.trim(), text).filter { it.isNotEmpty() }.joinToString("\n"))
+                }
+            }
+        }
+    }
 
     fun onNotesChange(notes: String) = _uiState.update { it.copy(notes = notes) }
 

@@ -13,11 +13,15 @@ import kotlinx.coroutines.flow.map
 
 enum class ThemeChoice { SYSTEM, LIGHT, DARK }
 
-/** reminders is off until the learner turns it on, which is also when Android 13+ asks for the notification permission. */
+/**
+ * reminders is off until the learner turns it on, which is also when Android 13+ asks for the notification permission.
+ * allowCloudAi is off too: nothing goes to a cloud model as a fallback until the learner says it may.
+ */
 data class Settings(
     val dailyGoal: Int = DEFAULT_DAILY_GOAL,
     val theme: ThemeChoice = ThemeChoice.SYSTEM,
     val reminders: Boolean = false,
+    val allowCloudAi: Boolean = false,
 ) {
     companion object {
         const val DEFAULT_DAILY_GOAL = 20
@@ -33,6 +37,7 @@ class SettingsRepository @Inject constructor(private val store: DataStore<Prefer
             dailyGoal = preferences[DAILY_GOAL] ?: Settings.DEFAULT_DAILY_GOAL,
             theme = ThemeChoice.entries.firstOrNull { it.name == preferences[THEME] } ?: ThemeChoice.SYSTEM,
             reminders = preferences[REMINDERS] ?: false,
+            allowCloudAi = preferences[ALLOW_CLOUD_AI] ?: false,
         )
     }
 
@@ -49,9 +54,14 @@ class SettingsRepository @Inject constructor(private val store: DataStore<Prefer
         store.edit { it[REMINDERS] = on }
     }
 
+    suspend fun setAllowCloudAi(allowed: Boolean) {
+        store.edit { it[ALLOW_CLOUD_AI] = allowed }
+    }
+
     private companion object {
         val DAILY_GOAL = intPreferencesKey("daily_goal")
         val THEME = stringPreferencesKey("theme")
         val REMINDERS = booleanPreferencesKey("reminders")
+        val ALLOW_CLOUD_AI = booleanPreferencesKey("allow_cloud_ai")
     }
 }

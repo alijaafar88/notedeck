@@ -30,7 +30,7 @@ class ClaudeCardGeneratorTest {
     fun tearDown() = server.close()
 
     private fun generator(dispatcher: TestDispatcher, url: String? = server.url("/").toString()) =
-        ClaudeCardGenerator(OkHttpClient(), AiConfig(url), dispatcher)
+        ClaudeCardGenerator(BackendClient(OkHttpClient(), AiConfig(url), dispatcher))
 
     /** One `data:` line, encoded the way the backend encodes it. */
     private fun data(piece: String) = "data: " + Json.encodeToString(piece)
@@ -75,7 +75,7 @@ class ClaudeCardGeneratorTest {
     fun `a 429 explains the rate limit`() = runTest {
         server.enqueue(MockResponse.Builder().code(429).build())
         val error = assertFailsWith<IOException> { generator(StandardTestDispatcher(testScheduler)).draft("notes").toList() }
-        assertEquals(ClaudeCardGenerator.messageFor(429), error.message)
+        assertEquals(BackendClient.messageFor(429), error.message)
     }
 
     @Test

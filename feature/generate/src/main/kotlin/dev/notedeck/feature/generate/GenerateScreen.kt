@@ -41,6 +41,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.notedeck.core.ui.NoteDeckTheme
 import dev.notedeck.domain.NotesPhoto
+import dev.notedeck.domain.Summary
+import dev.notedeck.domain.SummaryRoute
 import java.io.ByteArrayOutputStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -60,8 +62,14 @@ fun GenerateRoute(
     val pickPhoto = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri != null) scope.launch { viewModel.onPhoto(loadNotesPhoto(context, uri)) }
     }
+    val scanPhoto = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) scope.launch { viewModel.scan(loadNotesPhoto(context, uri)) }
+    }
     GenerateScreen(
         state,
+        onScan = { scanPhoto.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+        onSummarize = viewModel::summarize,
+        onDownloadSummaries = viewModel::downloadSummaries,
         onNotesChange = viewModel::onNotesChange,
         onChooseProvider = viewModel::chooseProvider,
         onAddPhoto = { pickPhoto.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
@@ -106,6 +114,9 @@ fun GenerateScreen(
     onStartOver: () -> Unit,
     onDone: () -> Unit,
     modifier: Modifier = Modifier,
+    onScan: () -> Unit = {},
+    onSummarize: () -> Unit = {},
+    onDownloadSummaries: () -> Unit = {},
 ) {
     Surface(modifier) {
         Column(
@@ -114,7 +125,10 @@ fun GenerateScreen(
         ) {
             Text("Generate cards for ${state.deckName}", style = MaterialTheme.typography.titleLarge)
             when (state.phase) {
-                GeneratePhase.Writing, GeneratePhase.Streaming -> WritingPart(state, onNotesChange, onChooseProvider, onAddPhoto, onRemovePhoto, onGenerate, onStop)
+                GeneratePhase.Writing, GeneratePhase.Streaming -> {
+                    WritingPart(state, onNotesChange, onChooseProvider, onAddPhoto, onRemovePhoto, onGenerate, onStop, onScan)
+                    if (state.phase == GeneratePhase.Writing) SummaryPart(state, onSummarize, onDownloadSummaries)
+                }
                 GeneratePhase.Reviewing -> ReviewPart(state, onEditFront, onEditBack, onRemove, onSave, onStartOver)
                 GeneratePhase.Saved -> {
                     Text("Saved ${state.savedCount} ${if (state.savedCount == 1) "card" else "cards"} to ${state.deckName}.")
@@ -137,6 +151,7 @@ private fun WritingPart(
     onRemovePhoto: () -> Unit,
     onGenerate: () -> Unit,
     onStop: () -> Unit,
+    onScan: () -> Unit,
 ) {
     val streaming = state.phase == GeneratePhase.Streaming
     Text("Model", style = MaterialTheme.typography.titleMedium)
@@ -162,6 +177,10 @@ private fun WritingPart(
         enabled = !streaming,
         modifier = Modifier.fillMaxWidth(),
     )
+    // OCR runs on the phone, so the photo is never uploaded; only the text it finds joins the notes.
+    OutlinedButton(onClick = onScan, enabled = !streaming && !state.scanning) {
+        Text(if (state.scanning) "Reading the photo..." else "Scan notes from a photo")
+    }
     if (state.provider?.acceptsPhotos == true) {
         if (state.hasPhoto) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -188,6 +207,33 @@ private fun WritingPart(
                 Modifier.padding(12.dp).semantics { liveRegion = LiveRegionMode.Polite },
                 style = MaterialTheme.typography.bodySmall,
             )
+        }
+    }
+}
+
+/** Every state gets words: where a summary would come from, or why there can't be one. */
+@Composable
+private fun SummaryPart(state: GenerateUiState, onSummarize: () -> Unit, onDownloadSummaries: () -> Unit) {
+    Text("Summary", style = MaterialTheme.typography.titleMedium)
+    when (state.summaryRoute) {
+        null -> Unit
+        SummaryRoute.OnDevice, SummaryRoute.Cloud -> Button(onClick = onSummarize, enabled = state.canSummarize) {
+            val where = if (state.summaryRoute == SummaryRoute.OnDevice) "on this phone" else "in the cloud"
+            Text(if (state.summarizing) "Summarising..." else "Summarize $where")
+        }
+        SummaryRoute.NeedsDownload -> OutlinedButton(onClick = onDownloadSummaries) { Text("Download on-device summaries (one time)") }
+        SummaryRoute.Downloading -> Text("Getting on-device summaries ready...")
+        SummaryRoute.NotOnThisPhone -> Text(
+            "Summaries need Gemini Nano, which this phone doesn't have, or cloud AI turned on in Settings.",
+            style = MaterialTheme.typography.bodySmall,
+        )
+    }
+    state.summary?.let { summary ->
+        Card(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(if (summary.onDevice) "AI summary, made on this phone" else "AI summary, made in the cloud", style = MaterialTheme.typography.labelMedium)
+                Text(summary.text, Modifier.semantics { liveRegion = LiveRegionMode.Polite })
+            }
         }
     }
 }
@@ -240,6 +286,25 @@ private fun GenerateStreamingPreview() = PreviewScreen(
         phase = GeneratePhase.Streaming,
         streamed = "[{\"front\": \"Is a Flow hot",
     ),
+)
+
+@Preview(name = "Summary from the cloud", showBackground = true)
+@Composable
+private fun GenerateSummaryPreview() = PreviewScreen(
+    GenerateUiState(
+        deckName = "Coroutines",
+        providers = previewProviders,
+        providerId = "claude",
+        notes = "Flows are cold. collect starts them.",
+        summaryRoute = SummaryRoute.Cloud,
+        summary = Summary("- Flows are cold\n- collect starts them", onDevice = false),
+    ),
+)
+
+@Preview(name = "No summaries on this phone", showBackground = true)
+@Composable
+private fun GenerateNoSummaryPreview() = PreviewScreen(
+    GenerateUiState(deckName = "Coroutines", providers = previewProviders, providerId = "claude", summaryRoute = SummaryRoute.NotOnThisPhone),
 )
 
 @Preview(name = "Reviewing", showBackground = true)
