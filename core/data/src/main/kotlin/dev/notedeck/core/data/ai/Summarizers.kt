@@ -15,6 +15,7 @@ import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.notedeck.domain.NotesPhoto
 import dev.notedeck.domain.OcrScanner
+import dev.notedeck.domain.Privacy
 import dev.notedeck.domain.Summarizer
 import dev.notedeck.domain.SummarizerStatus
 import javax.inject.Inject
@@ -84,7 +85,7 @@ class CloudSummarizer @Inject constructor(private val backend: BackendClient) : 
 
     override suspend fun status() = if (backend.configured) SummarizerStatus.Available else SummarizerStatus.Unavailable
 
-    override suspend fun summarize(text: String): String = backend.stream("/summary", text).toList().joinToString("").trim()
+    override suspend fun summarize(text: String): String = backend.stream("/summary", Privacy.redact(text)).toList().joinToString("").trim()
 }
 
 /** ML Kit text recognition with the model bundled in the APK: works offline, the first time. */

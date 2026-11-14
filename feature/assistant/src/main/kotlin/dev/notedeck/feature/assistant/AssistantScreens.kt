@@ -25,7 +25,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.notedeck.core.ui.AiFeedbackRow
 import dev.notedeck.core.ui.NoteDeckTheme
+import dev.notedeck.domain.AiRating
 import dev.notedeck.domain.DeckStats
 import dev.notedeck.domain.StudySnapshot
 import dev.notedeck.domain.WeeklyPlan
@@ -33,11 +35,17 @@ import dev.notedeck.domain.WeeklyPlan
 @Composable
 fun AskRoute(modifier: Modifier = Modifier, viewModel: AskViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    AskScreen(state, viewModel::onQuestionChange, viewModel::ask, modifier)
+    AskScreen(state, viewModel::onQuestionChange, viewModel::ask, modifier, onRate = viewModel::rate)
 }
 
 @Composable
-fun AskScreen(state: AskUiState, onQuestionChange: (String) -> Unit, onAsk: () -> Unit, modifier: Modifier = Modifier) {
+fun AskScreen(
+    state: AskUiState,
+    onQuestionChange: (String) -> Unit,
+    onAsk: () -> Unit,
+    modifier: Modifier = Modifier,
+    onRate: (AiRating) -> Unit = {},
+) {
     Surface(modifier) {
         Column(Modifier.padding(16.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("Ask my notes", style = MaterialTheme.typography.titleLarge)
@@ -58,6 +66,18 @@ fun AskScreen(state: AskUiState, onQuestionChange: (String) -> Unit, onAsk: () -
             }
             if (state.grounded == false) {
                 Text("This answer doesn't cite your notes. Check it before you trust it.", color = MaterialTheme.colorScheme.error)
+            }
+            if (state.grounded != null) {
+                AiFeedbackRow(
+                    thanks = when (state.rated) {
+                        null -> null
+                        AiRating.Reported -> "Reported. It's kept on this phone with the prompt version, to help fix it."
+                        else -> "Thanks for the feedback."
+                    },
+                    onHelpful = { onRate(AiRating.Helpful) },
+                    onNotHelpful = { onRate(AiRating.NotHelpful) },
+                    onReport = { onRate(AiRating.Reported) },
+                )
             }
             if (state.sources.isNotEmpty()) {
                 Text("Sources", style = MaterialTheme.typography.titleMedium)

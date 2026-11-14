@@ -2,18 +2,24 @@ package dev.notedeck.core.data.ai
 
 import dev.notedeck.core.data.ChunkEntity
 import dev.notedeck.core.data.DeckDao
+import dev.notedeck.core.data.FeedbackDao
+import dev.notedeck.core.data.FeedbackEntity
 import dev.notedeck.core.data.NoteDao
 import dev.notedeck.core.data.NoteEntity
 import dev.notedeck.core.data.SettingsRepository
+import dev.notedeck.domain.AiRating
 import dev.notedeck.domain.Answerer
 import dev.notedeck.domain.Chunker
 import dev.notedeck.domain.Coach
 import dev.notedeck.domain.DeckStats
 import dev.notedeck.domain.Embedder
+import dev.notedeck.domain.FeedbackCounts
+import dev.notedeck.domain.FeedbackStore
 import dev.notedeck.domain.IoDispatcher
 import dev.notedeck.domain.NoteIndex
 import dev.notedeck.domain.Passage
 import dev.notedeck.domain.PlanStore
+import dev.notedeck.domain.Privacy
 import dev.notedeck.domain.StatsSource
 import dev.notedeck.domain.StudySnapshot
 import dev.notedeck.domain.WeeklyPlan
@@ -66,7 +72,7 @@ class BackendAnswerer @Inject constructor(private val backend: BackendClient) : 
     private data class Request(val question: String, val sources: List<String>)
 
     override fun answer(question: String, sources: List<String>): Flow<String> =
-        backend.stream("/answer", Json.encodeToString(Request(question, sources)), BackendClient.JSON)
+        backend.stream("/answer", Json.encodeToString(Request(Privacy.redact(question), sources.map(Privacy::redact))), BackendClient.JSON)
 }
 
 /** The backend's study coach: a snapshot of statistics in, a proposed plan out. Validation happens in the ViewModel. */
@@ -131,4 +137,15 @@ class SettingsPlanStore @Inject constructor(private val settings: SettingsReposi
     }
 
     override suspend fun apply(plan: WeeklyPlan) = settings.applyPlan(plan.dailyGoal, plan.focusDecks, plan.reason)
+}
+
+/** Ratings of AI results, on the phone. */
+class RoomFeedbackStore @Inject constructor(private val dao: FeedbackDao, private val clock: Clock) : FeedbackStore {
+    override val counts: Flow<FeedbackCounts> = dao.observeCounts().map { rows ->
+        val byRating = rows.associate { it.rating to it.count }
+        FeedbackCounts(byRating[AiRating.Helpful] ?: 0, byRating[AiRating.NotHelpful] ?: 0, byRating[AiRating.Reported] ?: 0)
+    }
+
+    override suspend fun record(feature: String, promptVersion: String, rating: AiRating) =
+        dao.insert(FeedbackEntity(feature = feature, promptVersion = promptVersion, rating = rating, createdAt = clock.now()))
 }

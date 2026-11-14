@@ -1,9 +1,12 @@
 package dev.notedeck.feature.assistant
 
 import dev.notedeck.core.testing.MainDispatcherRule
+import dev.notedeck.domain.AiRating
 import dev.notedeck.domain.Answerer
 import dev.notedeck.domain.Coach
 import dev.notedeck.domain.DeckStats
+import dev.notedeck.domain.FeedbackCounts
+import dev.notedeck.domain.FeedbackStore
 import dev.notedeck.domain.Grounding
 import dev.notedeck.domain.NoteIndex
 import dev.notedeck.domain.Passage
@@ -42,13 +45,37 @@ class AssistantViewModelsTest {
         }
     }
 
+    private class RecordingFeedback : FeedbackStore {
+        val recorded = mutableListOf<Triple<String, String, AiRating>>()
+        override val counts = MutableStateFlow(FeedbackCounts())
+
+        override suspend fun record(feature: String, promptVersion: String, rating: AiRating) {
+            recorded += Triple(feature, promptVersion, rating)
+        }
+    }
+
+    private val feedback = RecordingFeedback()
+
+    @Test
+    fun `an answer can be rated once it's complete, with the answer prompt's version`() = runTest {
+        val viewModel = AskViewModel(FixedNotes(listOf(channel)), RecordingAnswerer("Hot [1]."), feedback)
+        viewModel.rate(AiRating.Helpful)
+        assertEquals(emptyList(), feedback.recorded, "nothing to rate yet")
+        viewModel.onQuestionChange("What is a channel?")
+        viewModel.ask()
+        advanceUntilIdle()
+        viewModel.rate(AiRating.NotHelpful)
+        advanceUntilIdle()
+        assertEquals(listOf(Triple("ask", Grounding.PROMPT_VERSION, AiRating.NotHelpful)), feedback.recorded)
+    }
+
     private val channel = Passage(1, "Coroutines", "Channel: a hot pipe between coroutines", score = 0.45f)
     private val weak = Passage(2, "Kotlin basics", "val is read-only", score = 0.05f)
 
     @Test
     fun `only relevant passages are sent, and cited ones are marked`() = runTest {
         val answerer = RecordingAnswerer("A hot pipe ", "between coroutines [1].")
-        val viewModel = AskViewModel(FixedNotes(listOf(channel, weak)), answerer)
+        val viewModel = AskViewModel(FixedNotes(listOf(channel, weak)), answerer, feedback)
         viewModel.onQuestionChange("What is a channel?")
         viewModel.ask()
         advanceUntilIdle()
@@ -63,7 +90,7 @@ class AssistantViewModelsTest {
     @Test
     fun `with nothing relevant, the answer is Not in your notes, and no model is called`() = runTest {
         val answerer = RecordingAnswerer("anything")
-        val viewModel = AskViewModel(FixedNotes(listOf(weak)), answerer)
+        val viewModel = AskViewModel(FixedNotes(listOf(weak)), answerer, feedback)
         viewModel.onQuestionChange("Who created Kotlin?")
         viewModel.ask()
         advanceUntilIdle()
@@ -73,7 +100,7 @@ class AssistantViewModelsTest {
 
     @Test
     fun `an answer that cites nothing is flagged`() = runTest {
-        val viewModel = AskViewModel(FixedNotes(listOf(channel)), RecordingAnswerer("Channels are hot."))
+        val viewModel = AskViewModel(FixedNotes(listOf(channel)), RecordingAnswerer("Channels are hot."), feedback)
         viewModel.onQuestionChange("What is a channel?")
         viewModel.ask()
         advanceUntilIdle()

@@ -37,6 +37,8 @@ class CardGenerators(val all: List<CardGenerator>)
 
 /** The prompt and the rules every draft must pass, shared by the app and the backend. */
 object CardRules {
+    /** Bump when SYSTEM_PROMPT or userPrompt changes. Eval reports and stored feedback record it. */
+    const val PROMPT_VERSION = "cards-v2"
     const val MAX_NOTES = 8_000
     const val MAX_FRONT = 200
     const val MAX_BACK = 120
@@ -51,7 +53,13 @@ object CardRules {
         4. Reply with a JSON array only, no other text: [{"front": "...", "back": "..."}]
     """.trimIndent()
 
-    fun userPrompt(notes: String): String = "<notes>\n${notes.take(MAX_NOTES)}\n</notes>"
+    /**
+     * The learner's notes as data: personal details redacted, and any notes tags inside them removed, so the text
+     * can't end the block early and pass itself off as instructions.
+     */
+    fun userPrompt(notes: String): String = "<notes>\n${Privacy.redact(notes.take(MAX_NOTES)).withoutTags()}\n</notes>"
+
+    private fun String.withoutTags() = replace(Regex("</?notes>", RegexOption.IGNORE_CASE), "")
 
     /** Trims each draft, then drops blanks, overlong cards, fronts already in the deck and repeats. */
     fun clean(drafts: List<CardDraft>, existingFronts: Collection<String> = emptyList()): List<CardDraft> {

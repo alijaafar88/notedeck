@@ -39,7 +39,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.notedeck.core.ui.AiFeedbackRow
 import dev.notedeck.core.ui.NoteDeckTheme
+import dev.notedeck.domain.AiRating
 import dev.notedeck.domain.NotesPhoto
 import dev.notedeck.domain.Summary
 import dev.notedeck.domain.SummaryRoute
@@ -68,6 +70,7 @@ fun GenerateRoute(
     GenerateScreen(
         state,
         onScan = { scanPhoto.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+        onRate = viewModel::rate,
         onSummarize = viewModel::summarize,
         onDownloadSummaries = viewModel::downloadSummaries,
         onNotesChange = viewModel::onNotesChange,
@@ -117,6 +120,7 @@ fun GenerateScreen(
     onScan: () -> Unit = {},
     onSummarize: () -> Unit = {},
     onDownloadSummaries: () -> Unit = {},
+    onRate: (AiRating) -> Unit = {},
 ) {
     Surface(modifier) {
         Column(
@@ -129,13 +133,17 @@ fun GenerateScreen(
                     WritingPart(state, onNotesChange, onChooseProvider, onAddPhoto, onRemovePhoto, onGenerate, onStop, onScan)
                     if (state.phase == GeneratePhase.Writing) SummaryPart(state, onSummarize, onDownloadSummaries)
                 }
-                GeneratePhase.Reviewing -> ReviewPart(state, onEditFront, onEditBack, onRemove, onSave, onStartOver)
+                GeneratePhase.Reviewing -> {
+                    ReviewPart(state, onEditFront, onEditBack, onRemove, onSave, onStartOver)
+                    FeedbackPart(state.rated, onRate)
+                }
                 GeneratePhase.Saved -> {
                     Text("Saved ${state.savedCount} ${if (state.savedCount == 1) "card" else "cards"} to ${state.deckName}.")
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Button(onClick = onDone) { Text("Done") }
                         OutlinedButton(onClick = onStartOver) { Text("Generate more") }
                     }
+                    FeedbackPart(state.rated, onRate)
                 }
             }
         }
@@ -209,6 +217,21 @@ private fun WritingPart(
             )
         }
     }
+}
+
+@Composable
+private fun FeedbackPart(rated: AiRating?, onRate: (AiRating) -> Unit) {
+    Text("Were these AI drafts useful?", style = MaterialTheme.typography.labelMedium)
+    AiFeedbackRow(
+        thanks = when (rated) {
+            null -> null
+            AiRating.Reported -> "Reported. It's kept on this phone with the prompt version, to help fix it."
+            else -> "Thanks for the feedback."
+        },
+        onHelpful = { onRate(AiRating.Helpful) },
+        onNotHelpful = { onRate(AiRating.NotHelpful) },
+        onReport = { onRate(AiRating.Reported) },
+    )
 }
 
 /** Every state gets words: where a summary would come from, or why there can't be one. */

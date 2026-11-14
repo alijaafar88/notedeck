@@ -44,3 +44,19 @@ ANTHROPIC_API_KEY=... ./gradlew :backend:run
 ```
 
 Debug builds on the emulator reach it at `http://10.0.2.2:8080`. To use another address, set `notedeck.proxyUrl` in `local.properties`; anything other than the emulator needs https.
+
+## Evals
+
+`evals/` checks the card generator against 30 golden notes, including notes with no facts and three prompt-injection attempts. Every push runs it in CI against stored replies, and fails below a 90% pass rate or on any injection failure:
+
+```bash
+./gradlew :evals:run
+```
+
+The stored replies in `evals/data/reference-replies.json` are hand-written references, not model output, so they test the eval runner and the rules, not the model. To test the model, run it live with a key in your environment, and add `--record` to save its replies as the new reference set:
+
+```bash
+ANTHROPIC_API_KEY=... ./gradlew :evals:run --args="live --record"
+```
+
+CI runs the live step too, when the repository has an `ANTHROPIC_API_KEY` secret.

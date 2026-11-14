@@ -1,7 +1,5 @@
-package dev.notedeck.core.data.ai
+package dev.notedeck.domain
 
-import dev.notedeck.domain.CardDraft
-import dev.notedeck.domain.InvalidReplyException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith

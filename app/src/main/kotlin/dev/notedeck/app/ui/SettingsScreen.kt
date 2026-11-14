@@ -44,6 +44,8 @@ import dev.notedeck.core.data.SettingsRepository
 import dev.notedeck.core.data.ThemeChoice
 import dev.notedeck.core.data.work.ReviewReminderWorker
 import dev.notedeck.core.ui.NoteDeckTheme
+import dev.notedeck.domain.FeedbackCounts
+import dev.notedeck.domain.FeedbackStore
 import javax.inject.Inject
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -54,7 +56,12 @@ import kotlinx.coroutines.launch
 class SettingsViewModel @Inject constructor(
     private val repository: SettingsRepository,
     private val workManager: WorkManager,
+    feedbackStore: FeedbackStore,
 ) : ViewModel() {
+    /** Ratings of AI results, as stored on this phone. */
+    val feedback: StateFlow<FeedbackCounts> = feedbackStore.counts
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), FeedbackCounts())
+
     /** Null until DataStore has been read, so the screen never flashes the defaults. */
     val settings: StateFlow<Settings?> = repository.settings
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
@@ -90,6 +97,7 @@ fun SettingsRoute(
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()
+    val feedback by viewModel.feedback.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var denied by rememberSaveable { mutableStateOf(false) }
     val askForPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -116,6 +124,7 @@ fun SettingsRoute(
             onTestReminder = if (BuildConfig.DEBUG && it.reminders) viewModel::sendTestReminder else null,
             onOpenPlayground = onOpenPlayground,
             onAllowCloudAiChange = viewModel::setAllowCloudAi,
+            feedback = feedback,
             modifier = modifier,
         )
     }
@@ -132,6 +141,7 @@ fun SettingsScreen(
     onTestReminder: (() -> Unit)? = null,
     onOpenPlayground: (() -> Unit)? = null,
     onAllowCloudAiChange: (Boolean) -> Unit = {},
+    feedback: FeedbackCounts? = null,
 ) {
     Surface(modifier) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -169,6 +179,12 @@ fun SettingsScreen(
                     Text("Your notes are sent to NoteDeck's server only for features this phone can't run itself", style = MaterialTheme.typography.bodySmall)
                 }
                 Switch(checked = settings.allowCloudAi, onCheckedChange = null)
+            }
+            feedback?.let {
+                Text(
+                    "Your ratings of AI results, kept on this phone: ${it.helpful} helpful, ${it.notHelpful} not helpful, ${it.reported} reported",
+                    style = MaterialTheme.typography.bodySmall,
+                )
             }
             Text("Theme", style = MaterialTheme.typography.titleMedium)
             ThemeChoice.entries.forEach { choice ->

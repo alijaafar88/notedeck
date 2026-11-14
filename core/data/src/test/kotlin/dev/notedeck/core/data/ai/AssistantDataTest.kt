@@ -6,7 +6,9 @@ import dev.notedeck.core.data.InMemoryPreferencesStore
 import dev.notedeck.core.data.NoteDeckDatabase
 import dev.notedeck.core.data.RoomDeckRepository
 import dev.notedeck.core.data.SettingsRepository
+import dev.notedeck.domain.AiRating
 import dev.notedeck.domain.DeckStats
+import dev.notedeck.domain.FeedbackCounts
 import dev.notedeck.domain.HashingEmbedder
 import dev.notedeck.domain.WeeklyPlan
 import dev.notedeck.model.Card
@@ -77,6 +79,15 @@ class AssistantDataTest {
         assertEquals(30, snapshot.dailyGoal)
         assertEquals(listOf(DeckStats("Coroutines", cards = 2, dueNow = 1, reviewsThisWeek = 1, againThisWeek = 1)), snapshot.decks)
         assertEquals(listOf(0, 0, 0, 0, 0, 0, 1), snapshot.reviewsPerDay)
+    }
+
+    @Test
+    fun `ratings are counted by kind, and stay in the local database`() = runTest {
+        val store = RoomFeedbackStore(db.feedbackDao(), clock)
+        store.record("generate", "cards-v2", AiRating.Helpful)
+        store.record("ask", "answer-v1", AiRating.Helpful)
+        store.record("generate", "cards-v2", AiRating.Reported)
+        assertEquals(FeedbackCounts(helpful = 2, notHelpful = 0, reported = 1), store.counts.first())
     }
 
     @Test

@@ -16,6 +16,8 @@ jobs:
     env:
       # Empty unless the repository has signing secrets, so forks and pull requests still build (unsigned).
       NOTEDECK_KEYSTORE_BASE64: ${{ secrets.NOTEDECK_KEYSTORE_BASE64 }}
+      # Only whether the secret exists; the key itself is given to the one step that needs it.
+      HAS_ANTHROPIC_KEY: ${{ secrets.ANTHROPIC_API_KEY != '' }}
     steps:
       - uses: actions/checkout@v7
 
@@ -31,6 +33,18 @@ jobs:
       # assembleRelease runs R8, so a missing keep rule fails here rather than on a phone.
       - name: Test and build
         run: ./gradlew test assembleDebug assembleRelease
+
+      # The golden set against the stored reference replies: free, repeatable, and it fails the build below the
+      # gate (90%, and every injection case).
+      - name: Evals (stored replies)
+        run: ./gradlew :evals:run
+
+      # The same golden set against the real model, only when the repository has an API key secret.
+      - name: Evals (live model)
+        if: env.HAS_ANTHROPIC_KEY == 'true'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: ./gradlew :evals:run --args=live
 
       - name: Signed release bundle
         if: env.NOTEDECK_KEYSTORE_BASE64 != ''

@@ -6,10 +6,12 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dev.notedeck.domain.AiRating
 import dev.notedeck.domain.CardGenerators
 import dev.notedeck.domain.CardRules
 import dev.notedeck.domain.DeckRepository
 import dev.notedeck.domain.DraftEvent
+import dev.notedeck.domain.FeedbackStore
 import dev.notedeck.domain.NoteIndex
 import dev.notedeck.domain.NotesPhoto
 import dev.notedeck.domain.OcrScanner
@@ -50,6 +52,8 @@ data class GenerateUiState(
     val summarizing: Boolean = false,
     val summary: Summary? = null,
     val scanning: Boolean = false,
+    /** The learner's rating of these drafts, once given. */
+    val rated: AiRating? = null,
 ) {
     val provider: ProviderChoice? get() = providers.firstOrNull { it.id == providerId }
     val canGenerate: Boolean get() = phase == GeneratePhase.Writing && provider?.available == true && (notes.isNotBlank() || hasPhoto)
@@ -71,6 +75,7 @@ class GenerateViewModel @AssistedInject constructor(
     private val summaries: SummaryRouter,
     private val ocr: OcrScanner,
     private val noteIndex: NoteIndex,
+    private val feedback: FeedbackStore,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(
         GenerateUiState(
@@ -168,7 +173,7 @@ class GenerateViewModel @AssistedInject constructor(
         val generator = generators.all.first { it.id == state.providerId }
         job?.cancel()
         job = viewModelScope.launch {
-            _uiState.update { it.copy(phase = GeneratePhase.Streaming, streamed = "", cards = emptyList(), error = null) }
+            _uiState.update { it.copy(phase = GeneratePhase.Streaming, streamed = "", cards = emptyList(), error = null, rated = null) }
             try {
                 generator.draft(state.notes, photo).collect { event ->
                     when (event) {
@@ -226,7 +231,15 @@ class GenerateViewModel @AssistedInject constructor(
         }
     }
 
-    fun startOver() = _uiState.update { it.copy(phase = GeneratePhase.Writing, streamed = "", cards = emptyList(), error = null) }
+    fun startOver() = _uiState.update { it.copy(phase = GeneratePhase.Writing, streamed = "", cards = emptyList(), error = null, rated = null) }
+
+    /** Stored on the phone with the prompt version that wrote the drafts. */
+    fun rate(rating: AiRating) {
+        if (_uiState.value.rated != null) return
+        // Marked at once, so a quick second tap can't record twice.
+        _uiState.update { it.copy(rated = rating) }
+        viewModelScope.launch { feedback.record(feature = "generate", promptVersion = CardRules.PROMPT_VERSION, rating = rating) }
+    }
 
     @AssistedFactory
     interface Factory {

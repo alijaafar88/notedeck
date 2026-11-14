@@ -124,14 +124,26 @@ interface NoteDao {
     suspend fun noteCount(): Int
 }
 
+@Dao
+interface FeedbackDao {
+    @Insert
+    suspend fun insert(feedback: FeedbackEntity)
+
+    @Query("SELECT rating, COUNT(*) AS count FROM ai_feedback GROUP BY rating")
+    fun observeCounts(): Flow<List<RatingCount>>
+}
+
 /**
- * Version 2 adds shared_decks; version 3 adds notes and their chunks. Room writes both migrations from the
+ * Version 2 adds shared_decks; version 3 adds notes and their chunks; version 4 adds AI feedback. Room writes both migrations from the
  * exported schemas, so learners keep their decks.
  */
 @Database(
-    entities = [DeckEntity::class, CardEntity::class, ReviewEntity::class, SharedDeckEntity::class, NoteEntity::class, ChunkEntity::class],
-    version = 3,
-    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3)],
+    entities = [
+        DeckEntity::class, CardEntity::class, ReviewEntity::class, SharedDeckEntity::class,
+        NoteEntity::class, ChunkEntity::class, FeedbackEntity::class,
+    ],
+    version = 4,
+    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3), AutoMigration(from = 3, to = 4)],
 )
 @ColumnTypeConverters(Converters::class)
 abstract class NoteDeckDatabase : RoomDatabase() {
@@ -140,4 +152,6 @@ abstract class NoteDeckDatabase : RoomDatabase() {
     abstract fun sharedDeckDao(): SharedDeckDao
 
     abstract fun noteDao(): NoteDao
+
+    abstract fun feedbackDao(): FeedbackDao
 }

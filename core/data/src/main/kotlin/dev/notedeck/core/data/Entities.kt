@@ -7,6 +7,7 @@ import androidx.room3.ForeignKey
 import androidx.room3.Index
 import androidx.room3.PrimaryKey
 import androidx.room3.Relation
+import dev.notedeck.domain.AiRating
 import dev.notedeck.model.Card
 import dev.notedeck.model.Deck
 import dev.notedeck.model.Review
@@ -79,6 +80,19 @@ class ChunkEntity(
     val text: String,
     val embedding: ByteArray,
 )
+
+/** A learner's rating of one AI result, with the prompt version that produced it. Stays on the phone. */
+@Entity(tableName = "ai_feedback")
+data class FeedbackEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val feature: String,
+    val promptVersion: String,
+    val rating: AiRating,
+    val createdAt: Instant,
+)
+
+/** Not a table: how many ratings of one kind. */
+data class RatingCount(val rating: AiRating, val count: Int)
 
 /** Not a table: a chunk with its note's deck, for search. */
 data class ChunkRow(val noteId: Long, val deckName: String, val text: String, val embedding: ByteArray)

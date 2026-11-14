@@ -3,8 +3,10 @@ package dev.notedeck.feature.assistant
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dev.notedeck.domain.AiRating
 import dev.notedeck.domain.Answerer
 import dev.notedeck.domain.Coach
+import dev.notedeck.domain.FeedbackStore
 import dev.notedeck.domain.Grounding
 import dev.notedeck.domain.NoteIndex
 import dev.notedeck.domain.PlanRules
@@ -31,6 +33,7 @@ data class AskUiState(
     /** Null until an answer is complete; false flags an answer that cites nothing it was given. */
     val grounded: Boolean? = null,
     val error: String? = null,
+    val rated: AiRating? = null,
 ) {
     val canAsk: Boolean get() = question.isNotBlank() && !asking
 }
@@ -40,7 +43,11 @@ data class AskUiState(
  * answer must cite them. With no matching passage there's no model call at all: the notes don't say.
  */
 @HiltViewModel
-class AskViewModel @Inject constructor(private val notes: NoteIndex, private val answerer: Answerer) : ViewModel() {
+class AskViewModel @Inject constructor(
+    private val notes: NoteIndex,
+    private val answerer: Answerer,
+    private val feedback: FeedbackStore,
+) : ViewModel() {
     private val _uiState = MutableStateFlow(AskUiState())
     val uiState: StateFlow<AskUiState> = _uiState.asStateFlow()
     private var job: Job? = null
@@ -51,7 +58,7 @@ class AskViewModel @Inject constructor(private val notes: NoteIndex, private val
         val question = _uiState.value.takeIf { it.canAsk }?.question?.trim() ?: return
         job?.cancel()
         job = viewModelScope.launch {
-            _uiState.update { it.copy(asking = true, answer = "", sources = emptyList(), grounded = null, error = null) }
+            _uiState.update { it.copy(asking = true, answer = "", sources = emptyList(), grounded = null, error = null, rated = null) }
             try {
                 val passages = notes.search(question, k = 4).filter { it.score >= Grounding.MIN_SCORE }
                 if (passages.isEmpty()) {
@@ -75,6 +82,13 @@ class AskViewModel @Inject constructor(private val notes: NoteIndex, private val
                 _uiState.update { it.copy(asking = false, error = e.message ?: "Couldn't answer. Try again.") }
             }
         }
+    }
+
+    fun rate(rating: AiRating) {
+        if (_uiState.value.rated != null || _uiState.value.grounded == null) return
+        // Marked at once, so a quick second tap can't record twice.
+        _uiState.update { it.copy(rated = rating) }
+        viewModelScope.launch { feedback.record(feature = "ask", promptVersion = Grounding.PROMPT_VERSION, rating = rating) }
     }
 }
 

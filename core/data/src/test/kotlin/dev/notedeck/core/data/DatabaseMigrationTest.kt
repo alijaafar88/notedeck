@@ -3,6 +3,7 @@ package dev.notedeck.core.data
 import android.database.sqlite.SQLiteDatabase
 import androidx.room3.Room
 import androidx.sqlite.driver.AndroidSQLiteDriver
+import dev.notedeck.domain.AiRating
 import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -43,7 +44,7 @@ class DatabaseMigrationTest {
     }
 
     @Test
-    fun `upgrading from version 1 keeps decks and adds the shared-deck cache and the notes tables`() = runBlocking {
+    fun `upgrading from version 1 keeps decks and adds the shared-deck cache, the notes tables and feedback`() = runBlocking {
         val context = RuntimeEnvironment.getApplication()
         val file = context.getDatabasePath("migration-test.db")
         createVersion1(file)
@@ -64,6 +65,10 @@ class DatabaseMigrationTest {
             val notes = database.noteDao()
             notes.insert(NoteEntity(deckName = "Kotlin basics", text = "val is read-only", createdAt = Instant.fromEpochMilliseconds(6)), listOf(ChunkEntity(noteId = 0, position = 0, text = "val is read-only", embedding = byteArrayOf(1, 2, 3, 4))))
             assertEquals(listOf("val is read-only"), notes.chunks().map { it.text })
+
+            // Version 4's feedback table.
+            database.feedbackDao().insert(FeedbackEntity(feature = "ask", promptVersion = "answer-v1", rating = AiRating.Helpful, createdAt = Instant.fromEpochMilliseconds(7)))
+            assertEquals(listOf(RatingCount(AiRating.Helpful, 1)), database.feedbackDao().observeCounts().first())
         } finally {
             database.close()
         }

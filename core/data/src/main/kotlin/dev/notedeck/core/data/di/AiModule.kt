@@ -5,6 +5,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import dev.notedeck.core.data.BuildConfig
+import dev.notedeck.core.data.FeedbackDao
 import dev.notedeck.core.data.NoteDao
 import dev.notedeck.core.data.NoteDeckDatabase
 import dev.notedeck.core.data.SettingsRepository
@@ -15,6 +16,7 @@ import dev.notedeck.core.data.ai.CloudSummarizer
 import dev.notedeck.core.data.ai.GeminiCardGenerator
 import dev.notedeck.core.data.ai.MlKitOcrScanner
 import dev.notedeck.core.data.ai.MlKitSummarizer
+import dev.notedeck.core.data.ai.RoomFeedbackStore
 import dev.notedeck.core.data.ai.RoomNoteIndex
 import dev.notedeck.core.data.ai.RoomStatsSource
 import dev.notedeck.core.data.ai.SettingsPlanStore
@@ -23,6 +25,7 @@ import dev.notedeck.domain.CardGenerators
 import dev.notedeck.domain.Coach
 import dev.notedeck.domain.Embedder
 import dev.notedeck.domain.FakeCardGenerator
+import dev.notedeck.domain.FeedbackStore
 import dev.notedeck.domain.HashingEmbedder
 import dev.notedeck.domain.NoteIndex
 import dev.notedeck.domain.OcrScanner
@@ -68,4 +71,10 @@ object CardGeneratorModule {
 
     @Provides
     fun planStore(store: SettingsPlanStore): PlanStore = store
+
+    @Provides
+    fun feedbackDao(database: NoteDeckDatabase): FeedbackDao = database.feedbackDao()
+
+    @Provides
+    fun feedbackStore(store: RoomFeedbackStore): FeedbackStore = store
 }

@@ -92,6 +92,7 @@ data class GroundedAnswer(val text: String, val cited: List<Int>, val grounded: 
 
 /** The prompt, and the checks every answer goes through. Shared with the backend. */
 object Grounding {
+    const val PROMPT_VERSION = "answer-v1"
     const val NOT_IN_NOTES = "Not in your notes."
 
     /** Passages scoring below this don't count as relevant. Tuned for [HashingEmbedder]. */
@@ -105,7 +106,7 @@ object Grounding {
     """.trimIndent()
 
     fun userPrompt(question: String, sources: List<String>): String =
-        sources.mapIndexed { i, s -> "[${i + 1}] $s" }.joinToString("\n") + "\n\nQuestion: $question"
+        sources.mapIndexed { i, s -> "[${i + 1}] ${Privacy.redact(s)}" }.joinToString("\n") + "\n\nQuestion: ${Privacy.redact(question)}"
 
     fun citations(answer: String): List<Int> =
         Regex("""\[(\d+)]""").findAll(answer).map { it.groupValues[1].toInt() }.distinct().toList()

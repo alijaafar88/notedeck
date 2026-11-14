@@ -1,9 +1,13 @@
 package dev.notedeck.feature.generate
 
 import dev.notedeck.core.testing.MainDispatcherRule
+import dev.notedeck.domain.AiRating
 import dev.notedeck.domain.CardDraft
 import dev.notedeck.domain.CardGenerator
 import dev.notedeck.domain.CardGenerators
+import dev.notedeck.domain.CardRules
+import dev.notedeck.domain.FeedbackCounts
+import dev.notedeck.domain.FeedbackStore
 import dev.notedeck.domain.DraftEvent
 import dev.notedeck.domain.FakeCardGenerator
 import dev.notedeck.domain.FakeDeckRepository
@@ -26,6 +30,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.advanceTimeBy
@@ -90,7 +95,33 @@ class GenerateViewModelTest {
         summaries: SummaryRouter = noSummaries,
         ocr: OcrScanner = OcrScanner { null },
         notes: RecordingNotes = RecordingNotes(),
-    ) = GenerateViewModel("Coroutines", CardGenerators(generators.toList()), repository, summaries, ocr, notes)
+        feedback: RecordingFeedback = RecordingFeedback(),
+    ) = GenerateViewModel("Coroutines", CardGenerators(generators.toList()), repository, summaries, ocr, notes, feedback)
+
+    private class RecordingFeedback : FeedbackStore {
+        val recorded = mutableListOf<Triple<String, String, AiRating>>()
+        override val counts = MutableStateFlow(FeedbackCounts())
+
+        override suspend fun record(feature: String, promptVersion: String, rating: AiRating) {
+            recorded += Triple(feature, promptVersion, rating)
+        }
+    }
+
+    @Test
+    fun `a rating is stored once, with the prompt version that wrote the drafts`() = runTest {
+        val feedback = RecordingFeedback()
+        val viewModel = viewModel(FakeCardGenerator(), feedback = feedback)
+        viewModel.onNotesChange("Channel: a hot pipe")
+        viewModel.generate()
+        advanceUntilIdle()
+        viewModel.rate(AiRating.Reported)
+        viewModel.rate(AiRating.Helpful)
+        advanceUntilIdle()
+        assertEquals(listOf(Triple("generate", CardRules.PROMPT_VERSION, AiRating.Reported)), feedback.recorded)
+        assertEquals(AiRating.Reported, viewModel.uiState.value.rated)
+        viewModel.startOver()
+        assertNull(viewModel.uiState.value.rated)
+    }
 
     private class RecordingNotes : NoteIndex {
         val added = mutableListOf<Pair<String, String>>()
