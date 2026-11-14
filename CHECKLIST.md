@@ -1,20 +1,19 @@
-# AI5: "Ask my notes" with citations, and a study coach you approve
+# AI6: Evals in CI, injection tests, and feedback kept on the phone
 
-Two features built from this unit. Ask answers questions from the learner's own notes, citing them, and says so when they don't hold the answer. The study coach is an agent on the backend that looks at the learner's statistics through read-only tools and proposes a week's plan, which changes nothing until the learner applies it. Koog is in the version catalog.
+NoteDeck's AI features work on the examples you tried. This step makes "work" a number: thirty golden notes, checked on every push, with injection attempts that must never get through. It also hardens the prompts, keeps personal data on the phone, and lets learners rate and report what the AI made.
 
-- [ ] Keep the notes behind generated cards: chunk them, embed each chunk, and store the vectors in Room (schema version 3, with a migration test)
-- [ ] Add an `Embedder` interface; a small hashing embedder runs on the phone for now
-- [ ] Add a note index: cosine similarity over the stored vectors, top k, and a score threshold below which Ask answers "Not in your notes." without calling a model
-- [ ] Add `POST /answer` to the backend: numbered sources in, an answer citing them like [1] streamed out
-- [ ] Add an Ask screen: the answer streams in, each citation shows its passage, and an answer with no valid citations is flagged
-- [ ] Add `POST /coach`: a Koog agent with read-only tools over a snapshot of the learner's statistics, a step limit, and a JSON plan out
-- [ ] Add a Coach screen: the plan is validated (known decks, a sensible goal), shown, and applied only when the learner taps Apply
-- [ ] Test the embedder, chunker, search, grounding checks, plan validation, both ViewModels with fakes, and the backend's routes and tools
+- [ ] Move the reply parser into `:core:domain` next to `CardRules`, so the app, the backend and the evals share one copy, and give the prompt a version name
+- [ ] Write 30 golden notes in `evals/data/golden.json`: what good cards must and mustn't mention, two notes with no facts, and three injection attempts
+- [ ] Add an `:evals` module that checks a reply per case, prints a report with the prompt version, and exits with an error below a 90% pass rate or on any injection failure
+- [ ] Store reference replies for CI, labelled as such; with `ANTHROPIC_API_KEY` set, `live` generates real replies and `--record` saves them
+- [ ] Run the evals in CI on every push, and live only when the API key secret exists
+- [ ] Harden the prompts: remove `<notes>` tags from the learner's text, and redact email addresses and phone numbers before anything leaves the phone
+- [ ] Add Helpful, Not helpful and Report to generated cards and answers, stored on the phone (a new schema version) with the prompt version, and show the totals in Settings
 
 When you're done:
-- `./gradlew test assembleDebug assembleRelease` passes.
-- Asking about something not in your notes answers "Not in your notes." with no network.
-- A proposed plan changes your daily goal only after you tap Apply.
+- `./gradlew test assembleDebug assembleRelease :evals:run` passes.
+- Breaking a reference reply (say, adding PWNED to an injection case) makes `:evals:run` fail.
+- Rating a result shows up in Settings, and nothing about it leaves the phone.
 
 Then answer the verify question in the KotlinDroid Daily app.
-Stuck? Compare with the `ai5-solution` tag, but finish by hand first. Afterwards, try the AI-pair follow-up from the app.
+Stuck? Compare with the `ai6-solution` tag, but finish by hand first. Afterwards, try the AI-pair follow-up from the app.
